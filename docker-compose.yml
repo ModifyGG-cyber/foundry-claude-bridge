@@ -1,0 +1,13 @@
+# Relay only. Put it behind a reverse proxy (Caddy, nginx, Cloudflare Tunnel) that terminates HTTPS
+# and forwards WebSocket upgrades on /foundry.
+services:
+  relay:
+    build: ./relay
+    restart: unless-stopped
+    env_file: ./relay/.env
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - relay-data:/data
+volumes:
+  relay-data:

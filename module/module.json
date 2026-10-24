@@ -1,0 +1,13 @@
+{
+  "id": "claude-bridge",
+  "title": "Claude Bridge",
+  "description": "Connects this world to a self-hosted relay so Claude can read and manage it through MCP. Runs only in a GM's browser.",
+  "version": "0.1.0",
+  "authors": [{ "name": "Jim" }],
+  "compatibility": { "minimum": "13", "verified": "14" },
+  "esmodules": ["scripts/main.js"],
+  "languages": [],
+  "url": "",
+  "manifest": "",
+  "download": ""
+}
