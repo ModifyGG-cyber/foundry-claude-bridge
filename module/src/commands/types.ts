@@ -3039,6 +3039,8 @@ export interface Coc7ValueChangeResult {
   /** Rolled amount when a formula was given. */
   rolled?: number;
   applied: boolean;
+  /** Status effects (conditions) the change added, such as unconscious or tempoInsane. */
+  conditionsAdded?: string[];
   note?: string;
 }
 

@@ -239,6 +239,19 @@ export async function coc7RequestRollHandler(params: Coc7RequestRollParams): Pro
   return { messageId: message.id, links };
 }
 
+function clamp(value: number, min: number, max: number | null): number {
+  return Math.max(min, max === null ? value : Math.min(max, value));
+}
+
+function statusList(actor: Coc7Actor): string[] {
+  return actor.statuses ? [...actor.statuses] : [];
+}
+
+function conditionsAdded(before: string[], actor: Coc7Actor): { conditionsAdded?: string[] } {
+  const added = statusList(actor).filter(status => !before.includes(status));
+  return added.length ? { conditionsAdded: added } : {};
+}
+
 async function rollAmount(amount: number | string): Promise<{ value: number; rolled?: number }> {
   if (typeof amount === 'number') {
     if (!Number.isFinite(amount) || amount < 0) throw new Error('amount must be zero or more');
@@ -252,10 +265,32 @@ async function rollAmount(amount: number | string): Promise<{ value: number; rol
 export async function coc7LoseSanityHandler(params: Coc7LoseSanityParams): Promise<Coc7ValueChangeResult> {
   requireSystem(SYSTEM, 'coc7/lose-sanity');
   const actor = actorFor(params);
-  const before = num(actor.system.attribs?.['san']?.value) ?? 0;
+  const san = actor.system.attribs?.['san'];
+  const before = num(san?.value) ?? 0;
+  const max = num(san?.max);
+  const statusesBefore = statusList(actor);
   const { value, rolled } = await rollAmount(params.amount);
-  const lost = await actor.loseSan(params.reason ?? '', value);
-  const after = num(actor.system.attribs?.['san']?.value) ?? before - lost;
+  // CoC7 only tracks loss per reason on characters; on an NPC, setReasonSanLoss throws after SAN has
+  // already been taken, so a retry would take it twice. Leave the reason out where it isn't tracked.
+  const tracksReasons = Array.isArray(actor.system.sanityLossEvents);
+  const reason = tracksReasons ? (params.reason ?? '') : '';
+  let lost: number;
+  let note: string | undefined;
+  try {
+    lost = await actor.loseSan(reason, value);
+  } catch (error) {
+    const now = num(actor.system.attribs?.['san']?.value) ?? before;
+    if (now === before) throw error;
+    lost = before - now;
+    note = `SAN was reduced, but CoC7 then failed: ${error instanceof Error ? error.message : String(error)}. Do not retry.`;
+  }
+  // setSan doesn't wait for its update, so the actor may still show the old value; compute the result.
+  const after = clamp(before - lost, 0, max);
+  if (!note && value > 0 && lost === 0) {
+    note = `${actor.name} is immune to further SAN loss from "${params.reason ?? ''}".`;
+  } else if (!note && params.reason && !tracksReasons) {
+    note = `${actor.type} actors don't track SAN loss per reason, so "${params.reason}" was not recorded.`;
+  }
   return {
     actorId: actor.id,
     actorName: actor.name,
@@ -263,7 +298,8 @@ export async function coc7LoseSanityHandler(params: Coc7LoseSanityParams): Promi
     after,
     ...(rolled !== undefined ? { rolled } : {}),
     applied: lost > 0,
-    ...(value > 0 && lost === 0 ? { note: `${actor.name} is immune to further SAN loss from "${params.reason ?? ''}".` } : {})
+    ...conditionsAdded(statusesBefore, actor),
+    ...(note ? { note } : {})
   };
 }
 
@@ -289,8 +325,9 @@ export async function coc7DealDamageHandler(params: Coc7DealDamageParams): Promi
   const actor = actorFor(params);
   const before = num(actor.system.attribs?.['hp']?.value) ?? 0;
   const { value, rolled } = await rollAmount(params.amount);
+  const statusesBefore = statusList(actor);
   const dealt = await actor.dealDamage(value, { ignoreArmor: params.ignoreArmor ?? false });
-  const after = num(actor.system.attribs?.['hp']?.value) ?? before - dealt;
+  const after = clamp(before - dealt, 0, num(actor.system.attribs?.['hp']?.max));
   return {
     actorId: actor.id,
     actorName: actor.name,
@@ -298,6 +335,7 @@ export async function coc7DealDamageHandler(params: Coc7DealDamageParams): Promi
     after,
     ...(rolled !== undefined ? { rolled } : {}),
     applied: dealt > 0,
+    ...conditionsAdded(statusesBefore, actor),
     ...(dealt < value ? { note: `Armour absorbed ${String(value - dealt)}.` } : {})
   };
 }

@@ -4,8 +4,7 @@ const mockMessage = { id: 'msg-123' };
 
 const mockChatMessage = {
   create: jest.fn().mockResolvedValue(mockMessage),
-  getSpeaker: jest.fn().mockReturnValue({ alias: 'Gamemaster', actor: undefined, scene: 'scene-1' }),
-  STYLE: { IC: 1, OOC: 2, EMOTE: 3 }
+  getSpeaker: jest.fn().mockReturnValue({ alias: 'Gamemaster', actor: undefined, scene: 'scene-1' })
 };
 
 const mockGame = {
@@ -16,6 +15,7 @@ const mockGame = {
 
 (global as Record<string, unknown>)['ChatMessage'] = mockChatMessage;
 (global as Record<string, unknown>)['game'] = mockGame;
+(global as Record<string, unknown>)['CONST'] = { CHAT_MESSAGE_STYLES: { OTHER: 0, IC: 1, OOC: 2, EMOTE: 3 } };
 
 describe('sendChatMessageHandler', () => {
   beforeEach(() => {
@@ -123,6 +123,16 @@ describe('sendChatMessageHandler', () => {
 
     const callArgs = mockChatMessage.create.mock.calls[0] as [Record<string, unknown>];
     expect(callArgs[0]['whisper']).toBeUndefined();
+  });
+
+  it('falls back to the v12+ style numbers when CONST is missing', async () => {
+    const saved = (global as Record<string, unknown>)['CONST'];
+    delete (global as Record<string, unknown>)['CONST'];
+    await sendChatMessageHandler({ content: 'Hi', type: 'ic' });
+    (global as Record<string, unknown>)['CONST'] = saved;
+
+    const callArgs = mockChatMessage.create.mock.calls[0] as [Record<string, unknown>];
+    expect(callArgs[0]['style']).toBe(2);
   });
 
   it('does not include style when type not provided', async () => {

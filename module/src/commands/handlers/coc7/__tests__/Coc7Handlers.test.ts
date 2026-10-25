@@ -44,7 +44,8 @@ const actor = {
   system: {
     characteristics: { str: { value: 40 }, int: { value: 85 } },
     attribs: { hp: { value: 10, max: 10 }, san: { value: 55, max: 99 }, lck: { value: 30 } },
-    infos: { occupation: 'Professor' }
+    infos: { occupation: 'Professor' },
+    sanityLossEvents: [] as unknown[]
   },
   items: { filter: (fn: (i: (typeof skills)[number]) => boolean) => skills.filter(fn) },
   skillCheck: jest.fn((name: string, _ff: boolean, options: { difficulty?: string; poolModifier?: number }) =>
@@ -61,8 +62,25 @@ const actor = {
   dealDamage: jest.fn(async (amount: number) => { const dealt = Math.max(0, amount - 1); actor.system.attribs.hp.value -= dealt; return dealt; })
 };
 
+/** An NPC as CoC7 builds one: no sanityLossEvents, and setSan doesn't wait for its update. */
+const npc = {
+  ...actor,
+  id: 'n1',
+  uuid: 'Actor.n1',
+  name: 'Cultist',
+  type: 'npc',
+  statuses: new Set<string>(),
+  system: { attribs: { hp: { value: 12, max: 12 }, san: { value: 38, max: 99 } } } as typeof actor.system,
+  loseSan: jest.fn(async (reason: string, amount: number) => {
+    // Reproduces CoC7: SAN is taken first, then the reason bookkeeping fails on an NPC.
+    npc.statuses.add('tempoInsane');
+    if (reason !== '') throw new SyntaxError('"undefined" is not valid JSON');
+    return amount;
+  })
+};
+
 const chatCreate = jest.fn(async () => ({ id: 'chat1' }));
-const mockGame = { system: { id: 'CoC7' }, actors: { get: (id: string) => (id === 'a1' ? actor : undefined) }, scenes: { get: () => undefined, active: null } };
+const mockGame = { system: { id: 'CoC7' }, actors: { get: (id: string) => (id === 'a1' ? actor : id === 'n1' ? npc : undefined) }, scenes: { get: () => undefined, active: null } };
 Object.assign(globalThis, {
   game: mockGame,
   Hooks: {
@@ -165,5 +183,22 @@ describe('CoC7 handlers', () => {
 
     const hurt = await coc7DealDamageHandler({ actorId: 'a1', amount: 5 });
     expect(hurt).toMatchObject({ before: 10, after: 6, applied: true, note: 'Armour absorbed 1.' });
+  });
+
+  it('loses sanity on an NPC with a reason without failing, and reports the new value', async () => {
+    const san = await coc7LoseSanityHandler({ actorId: 'n1', amount: 1, reason: 'Ghoul' });
+    expect(npc.loseSan).toHaveBeenCalledWith('', 1);
+    expect(san).toMatchObject({ before: 38, after: 37, applied: true, conditionsAdded: ['tempoInsane'] });
+    expect(san.note).toMatch(/not recorded/);
+  });
+
+  it('never throws after SAN has changed', async () => {
+    npc.loseSan.mockImplementationOnce(async () => {
+      npc.system.attribs!['san']!.value = 30;
+      throw new Error('boom');
+    });
+    const san = await coc7LoseSanityHandler({ actorId: 'n1', amount: 8 });
+    expect(san).toMatchObject({ before: 38, after: 30, applied: true });
+    expect(san.note).toMatch(/Do not retry/);
   });
 });
