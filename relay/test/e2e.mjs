@@ -68,11 +68,22 @@ const STATE_DIR = mkdtempSync(join(tmpdir(), 'relay-state-'));
   try {
     await check('stdio: every tool is listed before Foundry connects', async () => {
       const { tools } = await client.listTools();
-      assert.equal(tools.length, 164);
+      assert.equal(tools.length, 166);
       const skill = tools.find(t => t.name === 'dnd5e-roll-skill');
       assert.deepEqual(skill.inputSchema.required, ['actorId', 'skill']);
       assert.equal(tools.find(t => t.name === 'clear-chat').annotations.destructiveHint, true);
       assert.equal(tools.find(t => t.name === 'get-actor').annotations.readOnlyHint, true);
+    });
+
+    await check('stdio: handout templates work without Foundry', async () => {
+      const list = json(await client.callTool({ name: 'handout-template-list', arguments: { setting: '1920s' } }));
+      assert.ok(list.some(t => t.id === 'telegram'));
+      assert.ok(!list.some(t => t.setting === 'fantasy'));
+      const telegram = json(await client.callTool({ name: 'handout-template-get', arguments: { id: 'telegram' } }));
+      assert.match(telegram.html, /TELEGRAM/);
+      assert.doesNotMatch(telegram.html, /<style|<script/);
+      const missing = await client.callTool({ name: 'handout-template-get', arguments: { id: 'nope' } });
+      assert.equal(missing.isError, true);
     });
 
     await check('stdio: calls fail clearly while Foundry is offline', async () => {
