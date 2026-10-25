@@ -21,8 +21,9 @@ interface FoundryChatMessage {
 interface ChatMessageConstructor {
   create(data: FoundryChatMessageData): Promise<FoundryChatMessage | undefined>;
   getSpeaker(): FoundrySpeaker;
-  STYLE: { IC: number; OOC: number; EMOTE: number };
 }
+
+type ChatStyles = { IC: number; OOC: number; EMOTE: number };
 
 interface ChatGame {
   actors: { get(id: string): { name: string } | undefined };
@@ -30,6 +31,14 @@ interface ChatGame {
 
 declare const ChatMessage: ChatMessageConstructor;
 declare const game: ChatGame;
+
+// Foundry v12+ keeps the styles in CONST.CHAT_MESSAGE_STYLES; ChatMessage has no STYLE property.
+const FALLBACK_STYLES: ChatStyles = { OOC: 1, IC: 2, EMOTE: 3 };
+
+function chatStyles(): ChatStyles {
+  const constants = (globalThis as { CONST?: { CHAT_MESSAGE_STYLES?: ChatStyles } }).CONST;
+  return constants?.CHAT_MESSAGE_STYLES ?? FALLBACK_STYLES;
+}
 
 const STYLE_MAP: Record<string, 'IC' | 'OOC' | 'EMOTE'> = {
   ic: 'IC',
@@ -69,7 +78,7 @@ export async function sendChatMessageHandler(params: SendChatMessageParams): Pro
   if (params.type) {
     const styleKey = STYLE_MAP[params.type];
     if (styleKey) {
-      messageData.style = ChatMessage.STYLE[styleKey];
+      messageData.style = chatStyles()[styleKey];
     }
   }
 

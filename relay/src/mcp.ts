@@ -6,12 +6,13 @@ import schemas from './generated/schemas.json' with { type: 'json' };
 
 const SCHEMAS = schemas as Record<string, Tool['inputSchema']>;
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.1';
 
 const INSTRUCTIONS = `Tools for reading and changing a live Foundry VTT world through the GM's browser.
 Start with get-world-info to learn the game system. Prefer ids from list/search results over guessing.
 Changes are visible to players immediately. Tools marked destructive cannot be undone.
-dnd5e-*, pf2e-* and coc7-* tools appear only when the world runs that system. In CoC7 worlds prefer coc7-roll-check over roll-dice, and coc7-request-roll when a player should roll.`;
+dnd5e-*, pf2e-* and coc7-* tools appear only when the world runs that system.
+Positions (x, y) are canvas pixels, which include the scene padding: get-scene's mapArea says where the map starts. A grid cell is canvas pixel / grid size, as in the ASCII map and capture-scene labels. In CoC7 worlds prefer coc7-roll-check over roll-dice, and coc7-request-roll when a player should roll.`;
 
 function toTool(entry: CatalogEntry): Tool {
   const schema = SCHEMAS[entry.command];
@@ -56,7 +57,7 @@ export function buildServer(hub: FoundryHub) {
     { capabilities: { tools: { listChanged: true } }, instructions: INSTRUCTIONS },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: availableTools(hub.world?.system) }));
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: availableTools(hub.system) }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
     const entry = BY_NAME.get(request.params.name);

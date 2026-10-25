@@ -441,7 +441,10 @@ export interface ActorResult {
   name: string;
   type: string;
   img: string;
+  /** Folder name. */
   folder: string | null;
+  /** Folder id, the value the folder parameters take. */
+  folderId?: string | null;
 }
 
 // Filter Actors Commands
@@ -727,8 +730,20 @@ export interface ChatMessageData {
   style: 'other' | 'ooc' | 'ic' | 'emote';
   isRoll: boolean;
   rolls?: ChatMessageRollSummary[];
+  /** Call of Cthulhu check cards: the graded result (rolls[].total is not meaningful for dice pools). */
+  coc7Check?: Coc7CardSummary;
   whisper: string[];
   isWhisper: boolean;
+}
+
+export interface Coc7CardSummary {
+  total: number;
+  threshold: number;
+  difficulty: Coc7Difficulty;
+  successLevel: Coc7SuccessLevel;
+  passed: boolean;
+  /** Positive for bonus dice, negative for penalty dice. */
+  bonusDice: number;
 }
 
 export interface GetChatMessagesResult {
@@ -1595,8 +1610,23 @@ export interface SceneDetailResult {
   drawings: SceneDrawingResult[];
   regions: SceneRegionResult[];
   tokens: SceneTokenSummary[];
+  /**
+   * Where the map image sits on the canvas. All x, y in this API (tokens, walls, notes, pings)
+   * are canvas pixels that include the scene padding, so the map's top-left is (x, y), not (0, 0).
+   */
+  mapArea?: SceneMapArea;
   asciiMap: string;
   screenshot?: SceneScreenshot;
+}
+
+export interface SceneMapArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Grid cells (canvas pixel / grid size) of the map's top-left and bottom-right corners. */
+  firstCell: { gx: number; gy: number };
+  lastCell: { gx: number; gy: number };
 }
 
 export interface SceneScreenshot {
@@ -3039,6 +3069,8 @@ export interface Coc7ValueChangeResult {
   /** Rolled amount when a formula was given. */
   rolled?: number;
   applied: boolean;
+  /** Status effects (conditions) the change added, such as unconscious or tempoInsane. */
+  conditionsAdded?: string[];
   note?: string;
 }
 

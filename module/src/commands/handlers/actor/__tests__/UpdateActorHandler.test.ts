@@ -60,7 +60,8 @@ describe('updateActorHandler', () => {
         name: 'Updated Character',
         type: 'character',
         img: 'icons/svg/mystery-man.svg',
-        folder: null
+        folder: null,
+        folderId: null
       });
     });
 
@@ -162,7 +163,8 @@ describe('updateActorHandler', () => {
         name: 'Original Character',
         type: 'character',
         img: 'icons/svg/mystery-man.svg',
-        folder: null
+        folder: null,
+        folderId: null
       });
     });
   });

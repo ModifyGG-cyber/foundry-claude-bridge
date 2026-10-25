@@ -1,3 +1,5 @@
+import type { GridBounds } from './sceneGeometry';
+
 interface MapToken {
   id: string;
   name: string;
@@ -33,6 +35,8 @@ export interface AsciiMapInput {
   collisionBackend?: CollisionBackend | undefined;
   center?: { gx: number; gy: number } | undefined;
   radius?: number | undefined;
+  /** The scene's map area in grid cells; the map is cropped to it so padding isn't drawn. */
+  bounds?: GridBounds | undefined;
 }
 
 type WallType = 'wall' | 'door' | 'door-open' | 'door-locked' | 'secret';
@@ -45,6 +49,7 @@ interface TokenLegendEntry {
   gridY: number;
   size: string;
   hp: string;
+  offMap: boolean;
 }
 
 function classifyWall(wall: MapWall): WallType {
@@ -97,7 +102,7 @@ function horizontalWallStr(type: WallType): string {
 }
 
 export function generateAsciiMap(input: AsciiMapInput): string {
-  const { gridSize, gridDistance, gridUnits, sceneName, tokens, walls, collisionBackend } = input;
+  const { gridSize, gridDistance, gridUnits, sceneName, tokens, walls, collisionBackend, bounds } = input;
 
   if (!collisionBackend) {
     return `[ASCII map unavailable — no collision backend]`;
@@ -124,7 +129,8 @@ export function generateAsciiMap(input: AsciiMapInput): string {
       gridX: gx,
       gridY: gy,
       size: w === 1 && h === 1 ? '1x1' : `${String(w)}x${String(h)}`,
-      hp: hpStr
+      hp: hpStr,
+      offMap: bounds !== undefined && (gx > bounds.maxGX || gy > bounds.maxGY || gx + w - 1 < bounds.minGX || gy + h - 1 < bounds.minGY)
     });
 
     for (let dy = 0; dy < h; dy++) {
@@ -185,6 +191,16 @@ export function generateAsciiMap(input: AsciiMapInput): string {
     maxX += 1;
     minY -= 1;
     maxY += 1;
+  }
+
+  if (bounds) {
+    minX = Math.max(minX, bounds.minGX);
+    minY = Math.max(minY, bounds.minGY);
+    maxX = Math.min(maxX, bounds.maxGX);
+    maxY = Math.min(maxY, bounds.maxGY);
+    if (minX > maxX || minY > maxY) {
+      return `[Nothing inside the map area (cells ${String(bounds.minGX)},${String(bounds.minGY)} to ${String(bounds.maxGX)},${String(bounds.maxGY)})]`;
+    }
   }
 
   // Check wall collisions between adjacent cells
@@ -264,9 +280,12 @@ export function generateAsciiMap(input: AsciiMapInput): string {
     const name = entry.name.padEnd(30);
     const size = entry.size.padEnd(5);
     const hp = entry.hp.padEnd(10);
-    const pos = `(${String(entry.gridX)},${String(entry.gridY)})`;
+    const pos = `(${String(entry.gridX)},${String(entry.gridY)})${entry.offMap ? ' off-map, in the scene padding' : ''}`;
     lines.push(`${num} ${name} ${size} ${hp} ${pos}`);
   }
 
-  return `${sceneName} | ${String(gridDistance)}${gridUnits}/cell\n\n${lines.join('\n')}`;
+  const frame = bounds
+    ? `Cells are canvas grid cells (canvas pixel / ${String(gridSize)}). The map area is cells ${String(bounds.minGX)},${String(bounds.minGY)} to ${String(bounds.maxGX)},${String(bounds.maxGY)}; token x, y = cell * ${String(gridSize)}.`
+    : `Cells are canvas grid cells (canvas pixel / ${String(gridSize)}).`;
+  return `${sceneName} | ${String(gridDistance)}${gridUnits}/cell\n${frame}\n\n${lines.join('\n')}`;
 }

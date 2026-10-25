@@ -262,4 +262,38 @@ describe('generateAsciiMap', () => {
     expect(Math.min(...yCoords)).toBe(-2);
     expect(Math.max(...yCoords)).toBe(22);
   });
+
+  describe('map area bounds', () => {
+    const bounds = { minGX: 5, minGY: 4, maxGX: 9, maxGY: 8 };
+
+    it('crops a zoomed map to the scene so padding cells are not drawn', () => {
+      const result = generateAsciiMap(baseInput({
+        tokens: [{ id: 't1', name: 'Harvey', x: 500, y: 400, width: 1, height: 1 }],
+        center: { gx: 5, gy: 4 },
+        radius: 12,
+        bounds
+      }));
+
+      const lines = result.split('\n=== LEGEND')[0]!.split('\n');
+      const header = lines.find(line => /^\s+\d+(\s+\d+)+\s*$/.test(line));
+      expect(header?.trim().split(/\s+/)).toEqual(['5', '6', '7', '8', '9']);
+      const rows = lines.filter(line => /^\s{0,3}-?\d+ [ ·\d]/.test(line));
+      expect(rows.map(line => line.trim().split(' ')[0])).toEqual(['4', '5', '6', '7', '8']);
+      expect(result).not.toMatch(/^\s+-\d/m);
+      expect(result).toContain('The map area is cells 5,4 to 9,8');
+    });
+
+    it('marks tokens placed in the padding as off-map', () => {
+      const result = generateAsciiMap(baseInput({
+        tokens: [
+          { id: 't1', name: 'Harvey', x: 600, y: 500, width: 1, height: 1 },
+          { id: 't2', name: 'Lost', x: 200, y: 200, width: 1, height: 1 }
+        ],
+        bounds
+      }));
+
+      expect(result).toMatch(/Lost.*\(2,2\) off-map/);
+      expect(result).not.toMatch(/Harvey.*off-map/);
+    });
+  });
 });

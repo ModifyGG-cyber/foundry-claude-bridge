@@ -5,6 +5,7 @@ import type {
   NearbyTokenInfo
 } from '@/commands/types';
 import { generateAsciiMap, type AsciiMapInput } from '@/commands/handlers/scene/AsciiMapGenerator';
+import { actorHp, gridBounds, type SceneRect } from '@/commands/handlers/scene/sceneGeometry';
 
 interface SceneToken {
   id: string;
@@ -21,6 +22,7 @@ interface SceneToken {
         hp?: { value: number; max: number };
         ac?: { value: number };
       };
+      attribs?: { hp?: { value?: number | null; max?: number | null } };
     };
     statuses?: Set<string>;
   } | null;
@@ -80,6 +82,7 @@ interface ContextGlobals {
       tokens: { contents: SceneToken[] };
       walls: { contents: SceneWall[] };
     };
+    dimensions?: SceneRect;
   };
   CONFIG?: {
     Canvas?: {
@@ -153,7 +156,7 @@ export function getCombatTurnContextHandler(
     const currentCenterX = currentToken.x + gridSize / 2;
     const currentCenterY = currentToken.y + gridSize / 2;
 
-    const currentHp = currentToken.actor?.system?.attributes?.hp;
+    const currentHp = actorHp(currentToken.actor?.system);
     const currentAc = currentToken.actor?.system?.attributes?.ac;
 
     const currentInfo: TurnCombatantInfo = {
@@ -199,7 +202,7 @@ export function getCombatTurnContextHandler(
         );
       }
 
-      const tokenHp = token.actor?.system?.attributes?.hp;
+      const tokenHp = actorHp(token.actor?.system);
       const tokenAc = token.actor?.system?.attributes?.ac;
 
       const info: NearbyTokenInfo = {
@@ -238,7 +241,7 @@ export function getCombatTurnContextHandler(
         y: t.y,
         width: t.width ?? 1,
         height: t.height ?? 1,
-        hp: t.actor?.system?.attributes?.hp
+        hp: actorHp(t.actor?.system)
       }));
 
     const mapInput: AsciiMapInput = {
@@ -250,7 +253,8 @@ export function getCombatTurnContextHandler(
       walls,
       collisionBackend: moveBackend,
       center: { gx: currentGridX, gy: currentGridY },
-      radius: ZOOM_RADIUS
+      radius: ZOOM_RADIUS,
+      bounds: globals.canvas?.dimensions ? gridBounds(globals.canvas.dimensions, gridSize) : undefined
     };
 
     const asciiMap = generateAsciiMap(mapInput);

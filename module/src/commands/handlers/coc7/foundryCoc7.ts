@@ -26,6 +26,8 @@ export interface Coc7Actor {
     characteristics?: Record<string, { value?: number | null }>;
     attribs?: Record<string, { value?: number | null; max?: number | null }>;
     infos?: { occupation?: string };
+    /** Present on characters only; NPCs and creatures have no reason tracking. */
+    sanityLossEvents?: unknown[];
   };
   items: { filter(fn: (item: Coc7Item) => boolean): Coc7Item[] };
   skillCheck(skill: string, fastForward: boolean, options?: Coc7CheckOptions): Promise<unknown>;

@@ -112,6 +112,25 @@ describe('Token Handlers', () => {
   });
 
   describe('createTokenHandler', () => {
+    it("starts from the actor's prototype token", async () => {
+      const mockToken = createMockToken({ texture: { src: 'tokens/harvey.webp' } });
+      const mockScene = createMockScene();
+      mockScene.createEmbeddedDocuments.mockResolvedValue([mockToken]);
+      mockGame.scenes.active = mockScene;
+      const getTokenDocument = jest.fn(async (data: Record<string, unknown>) => ({
+        toObject: () => ({ name: 'Harvey', texture: { src: 'tokens/harvey.webp' }, width: 1, ...data })
+      }));
+      (mockGame as Record<string, unknown>)['actors'] = { get: () => ({ getTokenDocument }) };
+
+      const result = await createTokenHandler({ actorId: 'actor-456', x: 500, y: 400 });
+      delete (mockGame as Record<string, unknown>)['actors'];
+
+      expect(mockScene.createEmbeddedDocuments).toHaveBeenCalledWith('Token', [expect.objectContaining({
+        actorId: 'actor-456', x: 500, y: 400, name: 'Harvey', texture: { src: 'tokens/harvey.webp' }
+      })]);
+      expect(result.img).toBe('tokens/harvey.webp');
+    });
+
     it('creates token on active scene', async () => {
       const mockToken = createMockToken();
       const mockScene = createMockScene();
@@ -270,6 +289,19 @@ describe('Token Handlers', () => {
   });
 
   describe('moveTokenHandler', () => {
+    it('reports the destination even when the document has not caught up yet', async () => {
+      const mockToken = createMockToken();
+      mockToken.update.mockResolvedValue(undefined);
+      const mockScene = createMockScene();
+      mockScene.tokens.get.mockReturnValue(mockToken);
+      mockGame.scenes.active = mockScene;
+
+      const result = await moveTokenHandler({ tokenId: 'token-123', x: 300, y: 400 });
+
+      expect(mockToken.x).toBe(100);
+      expect(result).toMatchObject({ x: 300, y: 400 });
+    });
+
     it('moves token to new position', async () => {
       const mockToken = createMockToken();
       const mockScene = createMockScene();

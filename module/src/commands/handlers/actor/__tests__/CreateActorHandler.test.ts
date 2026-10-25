@@ -42,7 +42,8 @@ describe('createActorHandler', () => {
         name: 'Test Character',
         type: 'character',
         img: 'icons/svg/mystery-man.svg',
-        folder: null
+        folder: null,
+        folderId: null
       });
     });
 

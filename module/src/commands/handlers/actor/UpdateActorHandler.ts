@@ -7,7 +7,7 @@ interface FoundryActor {
   name: string;
   type: string;
   img: string;
-  folder: { name: string } | null;
+  folder: { id?: string; name: string } | null;
   update(data: Record<string, unknown>): Promise<unknown>;
 }
 
@@ -44,7 +44,8 @@ export async function updateActorHandler(params: UpdateActorParams): Promise<Act
     name: actor.name,
     type: actor.type,
     img: actor.img,
-    folder: actor.folder?.name ?? null
+    folder: actor.folder?.name ?? null,
+    folderId: actor.folder?.id ?? null
   };
   if (tokenId !== undefined) {
     result.tokenId = tokenId;

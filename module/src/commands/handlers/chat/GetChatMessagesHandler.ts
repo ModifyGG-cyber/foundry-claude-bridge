@@ -1,6 +1,7 @@
 import type { GetChatMessagesParams, GetChatMessagesResult, ChatMessageData } from '@/commands/types';
 import type { FoundryChatMessageDocument, FoundryChatGame } from './chatTypes';
 import { STYLE_TO_STRING, STRING_TO_STYLE, stripHtml } from './chatTypes';
+import { coc7CheckSummary } from '../coc7/Coc7Handlers';
 
 declare const game: FoundryChatGame;
 
@@ -30,6 +31,9 @@ function mapMessage(msg: FoundryChatMessageDocument, includeRolls: boolean): Cha
   if (includeRolls && msg.rolls.length > 0) {
     data.rolls = msg.rolls.map(r => ({ formula: r.formula, total: r.total }));
   }
+
+  const coc7Check = coc7CheckSummary(msg);
+  if (coc7Check) data.coc7Check = coc7Check;
 
   return data;
 }
