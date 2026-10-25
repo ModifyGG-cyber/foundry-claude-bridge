@@ -1,0 +1,224 @@
+import { Dnd5eActorRollGateway } from '../Dnd5eActorRollGateway';
+import type { FoundryRollGame } from '../foundryRollTypes';
+import { ActorNotFoundError, RollResolutionError, ValidationError } from '@/systems/shared/domain/errors';
+
+const mockRoll = {
+  total: 15,
+  formula: '1d20 + 5',
+  terms: [{ faces: 20, number: 1, results: [{ result: 10 }] }],
+  isCritical: false,
+  isFumble: false
+};
+
+const noFlags = { advantage: false, disadvantage: false, showInChat: false };
+
+function createGame(actor: unknown): FoundryRollGame {
+  return {
+    actors: { get: jest.fn().mockReturnValue(actor) }
+  } as unknown as FoundryRollGame;
+}
+
+describe('Dnd5eActorRollGateway', () => {
+  it('rolls a skill and maps the Foundry roll to a RollOutcome', async () => {
+    const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+    const outcome = await gateway.rollSkill('a1', 'ste', noFlags);
+
+    expect(rollSkill).toHaveBeenCalledWith(
+      { skill: 'ste' },
+      { configure: false },
+      { create: false }
+    );
+    expect(outcome).toEqual({
+      total: 15,
+      formula: '1d20 + 5',
+      dice: [{ type: 'd20', count: 1, results: [10] }]
+    });
+  });
+
+  it('passes showInChat through to the message config', async () => {
+    const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+    await gateway.rollSkill('a1', 'prc', { ...noFlags, showInChat: true });
+
+    expect(rollSkill).toHaveBeenCalledWith(
+      { skill: 'prc' },
+      { configure: false },
+      { create: true }
+    );
+  });
+
+  it('maps critical and fumble flags only when set', async () => {
+    const critRoll = {
+      ...mockRoll,
+      total: 25,
+      isCritical: true,
+      terms: [{ faces: 20, number: 1, results: [{ result: 20 }] }]
+    };
+    const rollSkill = jest.fn().mockResolvedValue([critRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+    const outcome = await gateway.rollSkill('a1', 'ath', noFlags);
+
+    expect(outcome.isCritical).toBe(true);
+    expect(outcome.isFumble).toBeUndefined();
+  });
+
+  it('throws ActorNotFoundError when the actor is missing', async () => {
+    const gateway = new Dnd5eActorRollGateway(createGame(undefined));
+
+    await expect(
+      gateway.rollSkill('missing', 'ste', noFlags)
+    ).rejects.toThrow(ActorNotFoundError);
+    await expect(
+      gateway.rollSkill('missing', 'ste', noFlags)
+    ).rejects.toThrow('Actor not found: missing');
+  });
+
+  it('throws RollResolutionError when no roll is returned', async () => {
+    const rollSkill = jest.fn().mockResolvedValue([]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+    await expect(
+      gateway.rollSkill('a1', 'ste', noFlags)
+    ).rejects.toThrow(RollResolutionError);
+    await expect(
+      gateway.rollSkill('a1', 'ste', noFlags)
+    ).rejects.toThrow('Skill roll returned no results');
+  });
+
+  it('rolls an ability check and maps the Foundry roll to a RollOutcome', async () => {
+    const rollAbilityCheck = jest.fn().mockResolvedValue([mockRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollAbilityCheck }));
+
+    const outcome = await gateway.rollAbility('a1', 'str', noFlags);
+
+    expect(rollAbilityCheck).toHaveBeenCalledWith(
+      { ability: 'str' },
+      { configure: false },
+      { create: false }
+    );
+    expect(outcome).toEqual({
+      total: 15,
+      formula: '1d20 + 5',
+      dice: [{ type: 'd20', count: 1, results: [10] }]
+    });
+  });
+
+  it('throws RollResolutionError when an ability check returns no roll', async () => {
+    const rollAbilityCheck = jest.fn().mockResolvedValue([]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollAbilityCheck }));
+
+    await expect(
+      gateway.rollAbility('a1', 'str', noFlags)
+    ).rejects.toThrow('Ability check roll returned no results');
+  });
+
+  it('rolls a saving throw and maps the Foundry roll to a RollOutcome', async () => {
+    const rollSavingThrow = jest.fn().mockResolvedValue([mockRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSavingThrow }));
+
+    const outcome = await gateway.rollSave('a1', 'dex', noFlags);
+
+    expect(rollSavingThrow).toHaveBeenCalledWith(
+      { ability: 'dex' },
+      { configure: false },
+      { create: false }
+    );
+    expect(outcome).toEqual({
+      total: 15,
+      formula: '1d20 + 5',
+      dice: [{ type: 'd20', count: 1, results: [10] }]
+    });
+  });
+
+  it('throws RollResolutionError when a saving throw returns no roll', async () => {
+    const rollSavingThrow = jest.fn().mockResolvedValue([]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSavingThrow }));
+
+    await expect(
+      gateway.rollSave('a1', 'dex', noFlags)
+    ).rejects.toThrow('Saving throw roll returned no results');
+  });
+
+  it('rolls perception via the perception skill (prc)', async () => {
+    const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+    await gateway.rollPerception('a1', { ...noFlags, showInChat: true });
+
+    expect(rollSkill).toHaveBeenCalledWith(
+      { skill: 'prc' },
+      { configure: false },
+      { create: true }
+    );
+  });
+
+  it('throws ValidationError for an unknown skill slug', async () => {
+    const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+    const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+    await expect(
+      gateway.rollSkill('a1', 'acrobatics', noFlags)
+    ).rejects.toThrow(ValidationError);
+  });
+
+  describe('advantage and disadvantage', () => {
+    it('sets advantage on the skill roll config only when requested', async () => {
+      const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+      const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+      await gateway.rollSkill('a1', 'ste', { advantage: true, disadvantage: false, showInChat: true });
+
+      expect(rollSkill.mock.calls[0]?.[0]).toStrictEqual({ skill: 'ste', advantage: true });
+      expect(rollSkill).toHaveBeenCalledWith(expect.anything(), { configure: false }, { create: true });
+    });
+
+    it('sets disadvantage on the skill roll config only when requested', async () => {
+      const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+      const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+      await gateway.rollSkill('a1', 'ste', { advantage: false, disadvantage: true, showInChat: false });
+
+      expect(rollSkill.mock.calls[0]?.[0]).toStrictEqual({ skill: 'ste', disadvantage: true });
+    });
+
+    it('leaves both flags out of the config when neither is requested', async () => {
+      const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+      const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+      await gateway.rollSkill('a1', 'ste', noFlags);
+
+      expect(rollSkill.mock.calls[0]?.[0]).toStrictEqual({ skill: 'ste' });
+    });
+
+    it('passes the flags to saving throws', async () => {
+      const rollSavingThrow = jest.fn().mockResolvedValue([mockRoll]);
+      const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSavingThrow }));
+
+      await gateway.rollSave('a1', 'dex', { advantage: false, disadvantage: true, showInChat: false });
+
+      expect(rollSavingThrow.mock.calls[0]?.[0]).toStrictEqual({ ability: 'dex', disadvantage: true });
+    });
+
+    it('passes the flags to ability checks', async () => {
+      const rollAbilityCheck = jest.fn().mockResolvedValue([mockRoll]);
+      const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollAbilityCheck }));
+
+      await gateway.rollAbility('a1', 'str', { advantage: true, disadvantage: false, showInChat: false });
+
+      expect(rollAbilityCheck.mock.calls[0]?.[0]).toStrictEqual({ ability: 'str', advantage: true });
+    });
+
+    it('passes the flags to perception rolls', async () => {
+      const rollSkill = jest.fn().mockResolvedValue([mockRoll]);
+      const gateway = new Dnd5eActorRollGateway(createGame({ id: 'a1', name: 'Hero', rollSkill }));
+
+      await gateway.rollPerception('a1', { advantage: false, disadvantage: true, showInChat: false });
+
+      expect(rollSkill.mock.calls[0]?.[0]).toStrictEqual({ skill: 'prc', disadvantage: true });
+    });
+  });
+});

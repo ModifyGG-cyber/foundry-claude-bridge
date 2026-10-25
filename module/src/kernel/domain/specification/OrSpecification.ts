@@ -1,0 +1,1 @@
+export { OrSpecification } from './CompositeSpecification';

@@ -1,17 +1,21 @@
 # Relay ↔ module protocol
 
-One WebSocket at `wss://<relay>/foundry`, opened by the GM's browser. All frames are JSON text.
+The relay speaks the wire protocol of the Foundry API Bridge module (`module/`), documented in
+`module/docs/COMMANDS.md`. Summary:
 
-| Direction | Message | Notes |
-| --- | --- | --- |
-| module → relay | `{"type":"hello","secret":"…","world":{id,title,system,systemVersion,foundryVersion,moduleVersion,gm}}` | Must be the first frame, within 10 s. |
-| relay → module | `{"type":"welcome"}` | Secret accepted. |
-| relay → module | `{"type":"call","id":"<uuid>","tool":"actor-get","args":{…}}` | `args` are already validated against the tool's schema. |
-| module → relay | `{"type":"result","id":"<uuid>","ok":true,"data":…}` | `data` is returned to Claude as JSON text. |
-| module → relay | `{"type":"result","id":"<uuid>","ok":false,"error":"message"}` | Shown to Claude as a tool error. |
+- The module opens `ws://<relay>/ws?apiKey=pk_…`. The relay closes with `4001` if the key doesn't match
+  `FOUNDRY_KEY` (the module then stops retrying until settings change), and closes an older connection
+  with `4002` when a newer one arrives (the old one retries after 2 minutes).
+- Commands, relay → module: `{"id":"<uuid>","type":"get-actor","params":{"actorId":"…"}}`
+- Responses, module → relay: `{"id":"<uuid>","success":true,"data":…}` or `{"id":"…","success":false,"error":"…"}`
+- Heartbeat: the module sends `{"type":"ping","ts":…}`, the relay answers `{"type":"pong","ts":…}`.
 
-Close codes: `4000` no hello in time, `4001` bad secret (the module stops retrying), `4002` invalid JSON,
-`4003` replaced by a newer connection from another GM browser. The relay sends WebSocket pings every 25 s.
+On connect the relay calls `get-world-info` to learn the game system, then tells Claude the tool list
+changed: `dnd5e-*` and `pf2e-*` tools are only offered in worlds of that system.
 
-Adding a tool means two edits: a schema in `relay/src/tools.ts` and a handler with the same name in
-`module/scripts/handlers.js`.
+## Adding a tool
+
+1. Add a handler in the module and register it in `module/src/main.ts`, with its params type in
+   `module/src/commands/types.ts` (`CommandParamsMap`).
+2. `cd relay && npm run gen` regenerates `src/generated/schemas.json` from those types.
+3. Add one line to `relay/src/catalog.ts` with the description Claude sees.

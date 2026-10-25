@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check manifest matches the tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          PKG_VERSION="$(node -p 'require("./package.json").version')"
+          if [ "$VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::tag v$VERSION does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+          npm run manifest:check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build module
+        run: npm run build
+
+      - name: Create release package
+        run: |
+          cd dist
+          zip -r ../foundry-api-bridge.zip .
+          cd ..
+
+      - name: Verify the package matches the tag
+        env:
+          PACKAGE_MANIFEST: ${{ runner.temp }}/module.json
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          unzip -p foundry-api-bridge.zip module.json > "$PACKAGE_MANIFEST"
+          read -r PKG_VERSION PKG_ID REPO_URL PKG_DOWNLOAD <<< "$(node -p 'const m = require(process.env.PACKAGE_MANIFEST); [m.version, m.id, m.url, m.download].join(" ")')"
+          EXPECTED="$REPO_URL/releases/download/v$VERSION/$PKG_ID.zip"
+          if [ "$PKG_VERSION" != "$VERSION" ] || [ "$PKG_DOWNLOAD" != "$EXPECTED" ]; then
+            echo "::error::release package describes v$PKG_VERSION downloading $PKG_DOWNLOAD, expected v$VERSION downloading $EXPECTED"
+            exit 1
+          fi
+          echo "release package describes v$PKG_VERSION and downloads $PKG_DOWNLOAD"
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Foundry API Bridge v${{ steps.get_version.outputs.VERSION }}
+
+            ### Installation
+
+            **Manifest URL:**
+            ```
+            https://raw.githubusercontent.com/alexivenkov/foundry-api-bridge-module/master/dist/module.json
+            ```
+
+            Or download the ZIP and extract to `Data/modules/foundry-api-bridge/`
+
+            ### Changes
+
+            See [CHANGELOG.md](https://github.com/alexivenkov/foundry-api-bridge-module/blob/master/CHANGELOG.md)
+          files: foundry-api-bridge.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Foundry VTT
+        env:
+          FOUNDRY_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+          RELEASE_VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          curl -s -X POST \
+            "https://api.foundryvtt.com/_api/packages/release_version/" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${FOUNDRY_TOKEN}" \
+            -d "{
+              \"id\": \"foundry-api-bridge\",
+              \"dry-run\": false,
+              \"release\": {
+                \"version\": \"${RELEASE_VERSION}\",
+                \"manifest\": \"https://raw.githubusercontent.com/alexivenkov/foundry-api-bridge-module/master/dist/module.json\",
+                \"notes\": \"https://github.com/alexivenkov/foundry-api-bridge-module/releases/tag/v${RELEASE_VERSION}\",
+                \"compatibility\": {
+                  \"minimum\": \"11\",
+                  \"verified\": \"14\"
+                }
+              }
+            }"

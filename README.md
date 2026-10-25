@@ -1,67 +1,76 @@
 # Foundry–Claude bridge
 
-Connects Claude (claude.ai, the Claude apps, Claude Code) to a Foundry VTT world without any third-party service.
+Connects Claude to a Foundry VTT world with no subscription and no third-party server.
 
 ```
-Claude ──HTTPS + OAuth──▶ relay (/mcp)  ◀──WSS, opened by the browser── Claude Bridge module (GM's browser) ──▶ your world
+Claude Desktop ──stdio──▶ relay (on your PC) ◀──ws://localhost:8787/ws── bridge module (GM's browser) ──▶ your world
 ```
 
-- `relay/`: Node/TypeScript service. A remote MCP server for Claude on `/mcp` and a WebSocket hub for Foundry on `/foundry`.
-- `module/`: the Foundry module (`claude-bridge`), Foundry v13 and v14. Runs only in a GM's browser.
+- `relay/`: a small Node service. Claude Desktop starts it as a local MCP server, and the Foundry
+  module connects to it over a WebSocket. It can also run as a remote server for claude.ai (`--http`).
+- `module/`: the Foundry module, a fork of the MIT-licensed
+  [Foundry API Bridge](https://github.com/alexivenkov/foundry-api-bridge-module) 8.15.0 (see `NOTICE.md`).
+  Foundry v11–v14. Runs only in a GM's browser.
+
+Claude gets 158 tools: actors, items, inventory, effects, folders, journals, roll tables, macros,
+playlists, scenes, walls and doors, map notes, tokens (with pathfinding), combat, compendiums, chat,
+dice, world time, and UI, plus D&D 5e and Pathfinder 2e tools in worlds of those systems.
 
 A GM must have the world open in a browser tab for Claude to reach it.
 
-## Tools (v0.1)
+## Setup for Claude Desktop with Foundry on the same PC
 
-| Tool | What it does |
-| --- | --- |
-| `world-info` | System, version, counts, active scene, users, compendiums |
-| `actor-list` | Filter actors by type, name, folder |
-| `actor-get` | Full sheet data, items and effects for one actor |
-| `journal-search` | Search entry names and page text |
-| `journal-get` | Read an entry's pages as plain text, paged |
-| `chat-send` | Post to chat as an actor or alias, optionally whispered to GMs |
+You need Node.js 20 or newer.
 
-## 1. Run the relay
+1. **Build the relay and make a key**
 
-It needs a public HTTPS address because claude.ai connects from Anthropic's cloud.
+   ```sh
+   cd relay
+   npm ci
+   npm run build
+   node dist/index.js --new-key      # prints pk_…; keep it for steps 2 and 3
+   ```
 
-```sh
-cd relay
-cp .env.example .env      # fill in PUBLIC_URL, FOUNDRY_SECRET, RELAY_PASSWORD
-docker compose -f ../docker-compose.yml up -d --build
-curl https://<your relay>/health
-```
+2. **Point the Foundry module at it.** With the module installed and enabled in your world, open
+   **Configure Settings → Foundry API Bridge** as GM and set:
+   - **MCP WebSocket URL:** `ws://localhost:8787/ws`
+   - **API WebSocket URL:** empty (that channel is the original author's REST service)
+   - **API Key:** the `pk_…` key from step 1
 
-Without Docker: `npm ci && npm run build && npm start` with the same variables set.
+   Reload the world. If you already run the original module, these settings are all you need to switch it
+   over. To install this fork instead, build it with `cd module && npm ci && npm run build` and copy
+   `module/dist` to `Data/modules/foundry-api-bridge`.
 
-Ways to give it HTTPS:
+3. **Add the relay to Claude Desktop.** Open Settings → Developer → Edit Config, and add the following
+   to `claude_desktop_config.json` (use the full path to your clone):
 
-- **VPS:** a Caddy site block `foundry-bridge.example.com { reverse_proxy 127.0.0.1:8787 }`. Caddy handles certificates and WebSockets.
-- **Home PC:** `cloudflared tunnel --url http://localhost:8787` for a quick test, or a named tunnel for a permanent hostname.
-- **The Forge / Molten:** run the relay on a small cloud instance (Fly.io, Railway, Render) since you can't add services next to Foundry.
+   ```json
+   {
+     "mcpServers": {
+       "foundry": {
+         "command": "node",
+         "args": ["C:\\path\\to\\foundry-claude-bridge\\relay\\dist\\index.js"],
+         "env": { "FOUNDRY_KEY": "pk_…" }
+       }
+     }
+   }
+   ```
 
-## 2. Install the module
+   Restart Claude Desktop. The relay starts with it, and Foundry shows "[MCP] Connected to server"
+   within a few seconds. `http://localhost:8787/health` shows whether the world is connected.
 
-Copy `module/` into your Foundry data folder as `Data/modules/claude-bridge`, restart Foundry, and enable **Claude Bridge** in the world.
-As GM, open **Configure Settings → Claude Bridge** and set:
+Then ask something like "Using Foundry, list the investigators and their sanity."
 
-- **Relay WebSocket URL:** `wss://<your relay>/foundry`
-- **Relay secret:** the `FOUNDRY_SECRET` value
+## Remote mode (claude.ai, or Foundry on another machine)
 
-These two are stored only in that browser. You should see "Claude Bridge connected." `/health` then shows your world.
-
-Also in settings: read-only mode, a list of disabled tools, and GM whispers for every change Claude makes.
-
-## 3. Connect Claude
-
-- **claude.ai and the apps:** Settings → Connectors → Add custom connector, URL `https://<your relay>/mcp`. Sign in with `RELAY_PASSWORD` when asked.
-- **Claude Code:** `claude mcp add --transport http foundry https://<your relay>/mcp --header "Authorization: Bearer $API_KEY"` (set `API_KEY` on the relay first).
-
-Then ask something like "Using Foundry, who are the investigators and what are their sanity scores?"
+`node dist/index.js --http` serves MCP on `/mcp` with a password-protected OAuth sign-in, which is what
+claude.ai custom connectors expect. It needs a public HTTPS address (Caddy, nginx or a Cloudflare
+Tunnel in front), and `PUBLIC_URL` and `RELAY_PASSWORD` set; see `relay/.env.example` and
+`docker-compose.yml`. The module's URL then becomes `wss://<your host>/ws`.
 
 ## Development
 
-`cd relay && npm test` builds the relay and runs an end-to-end test: the real relay, the real module handlers against a fake Foundry, an MCP client, and the full OAuth flow.
+`cd relay && npm test` builds the relay and runs end-to-end tests over stdio and HTTP against a fake
+module, covering the wire protocol, tool listing per system, images, timeouts and OAuth.
 
 See `PROTOCOL.md` for the wire format and how to add a tool.

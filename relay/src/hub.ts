@@ -1,17 +1,10 @@
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
-import type { Server } from 'node:http';
+import type { IncomingMessage, Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 
-/** What the module reports about its world when it connects. */
-export interface WorldInfo {
-  id: string;
-  title: string;
-  system: string;
-  systemVersion: string;
-  foundryVersion: string;
-  moduleVersion: string;
-  gm: string;
-}
+// Wire protocol of the Foundry module, see module/docs/COMMANDS.md and PROTOCOL.md.
+const CLOSE_KEY_REJECTED = 4001;
+const CLOSE_REPLACED = 4002;
 
 interface Pending {
   resolve: (value: unknown) => void;
@@ -19,130 +12,127 @@ interface Pending {
   timer: NodeJS.Timeout;
 }
 
-// Messages, see PROTOCOL.md
 type Incoming =
-  | { type: 'hello'; secret: string; world: WorldInfo }
-  | { type: 'result'; id: string; ok: true; data: unknown }
-  | { type: 'result'; id: string; ok: false; error: string };
+  | { type: 'ping'; ts?: number }
+  | { id: string; success: true; data?: unknown }
+  | { id: string; success: false; error?: string };
+
+export interface WorldSummary {
+  title?: string;
+  system?: string;
+  foundryVersion?: string;
+}
 
 export class FoundryError extends Error {}
 
-function sameSecret(a: unknown, b: string) {
-  if (typeof a !== 'string') return false;
+function sameKey(a: string | null, b: string) {
+  if (!a) return false;
   const ha = createHash('sha256').update(a).digest();
   const hb = createHash('sha256').update(b).digest();
   return timingSafeEqual(ha, hb);
 }
 
 /**
- * Holds the one WebSocket opened by the GM's browser and turns tool calls
- * into request/response pairs over it.
+ * Accepts the one WebSocket opened by the GM's browser and turns tool calls
+ * into command/response pairs over it.
  */
 export class FoundryHub {
   private socket?: WebSocket;
   private pending = new Map<string, Pending>();
-  world?: WorldInfo;
+  private listeners = new Set<() => void>();
+  world?: WorldSummary;
   connectedAt?: Date;
 
-  constructor(private secret: string, private timeoutMs: number) {}
+  constructor(private key: string, private timeoutMs: number, private log: (msg: string) => void) {}
 
   get connected() {
     return this.socket?.readyState === WebSocket.OPEN;
   }
 
-  attach(server: Server, path = '/foundry') {
-    const wss = new WebSocketServer({ server, path, maxPayload: 32 * 1024 * 1024 });
-    wss.on('connection', ws => this.onConnection(ws));
-
-    // Native ping frames; browsers answer them without any module code.
-    const alive = new WeakMap<WebSocket, boolean>();
-    wss.on('connection', ws => {
-      alive.set(ws, true);
-      ws.on('pong', () => alive.set(ws, true));
-    });
-    const interval = setInterval(() => {
-      for (const ws of wss.clients) {
-        if (!alive.get(ws)) {
-          ws.terminate();
-          continue;
-        }
-        alive.set(ws, false);
-        ws.ping();
-      }
-    }, 25_000);
-    wss.on('close', () => clearInterval(interval));
+  /** Called whenever Foundry connects or disconnects (the tool list may change). */
+  onChange(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
-  async call(tool: string, args: unknown): Promise<unknown> {
+  attach(server: Server, path = '/ws') {
+    const wss = new WebSocketServer({ server, path, maxPayload: 64 * 1024 * 1024 });
+    wss.on('connection', (ws, req) => this.onConnection(ws, req));
+  }
+
+  async call(command: string, params: unknown): Promise<unknown> {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      throw new FoundryError('Foundry is not connected. A GM needs to have the world open in a browser with the Claude Bridge module enabled.');
+      throw new FoundryError('Foundry is not connected. A GM needs the world open in a browser with the bridge module pointed at this relay.');
     }
     const id = randomUUID();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(new FoundryError(`Foundry did not answer "${tool}" within ${this.timeoutMs / 1000} seconds.`));
+        reject(new FoundryError(`Foundry did not answer "${command}" within ${this.timeoutMs / 1000} seconds.`));
       }, this.timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
-      socket.send(JSON.stringify({ type: 'call', id, tool, args: args ?? {} }));
+      socket.send(JSON.stringify({ id, type: command, params: params ?? {} }));
     });
   }
 
-  private onConnection(ws: WebSocket) {
-    let authed = false;
-    const helloTimer = setTimeout(() => ws.close(4000, 'hello timeout'), 10_000);
+  private onConnection(ws: WebSocket, req: IncomingMessage) {
+    const key = new URL(req.url ?? '/', 'http://relay').searchParams.get('apiKey');
+    if (!sameKey(key, this.key)) {
+      this.log('rejected a Foundry connection with the wrong API key');
+      ws.close(CLOSE_KEY_REJECTED, 'Invalid API key');
+      return;
+    }
+
+    if (this.socket && this.socket !== ws) {
+      this.socket.close(CLOSE_REPLACED, 'Replaced by a newer connection');
+      this.failAll('Foundry reconnected before answering.');
+    }
+    this.socket = ws;
+    this.connectedAt = new Date();
 
     ws.on('message', raw => {
       let msg: Incoming;
       try {
         msg = JSON.parse(raw.toString());
       } catch {
-        ws.close(4002, 'invalid json');
         return;
       }
-
-      if (!authed) {
-        if (msg.type !== 'hello' || !sameSecret(msg.secret, this.secret)) {
-          console.warn('[hub] rejected a connection with a bad secret');
-          ws.close(4001, 'unauthorized');
-          return;
-        }
-        authed = true;
-        clearTimeout(helloTimer);
-        this.adopt(ws, msg.world);
+      if ('type' in msg && msg.type === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong', ts: msg.ts }));
         return;
       }
-
-      if (msg.type === 'result') {
-        const pending = this.pending.get(msg.id);
-        if (!pending) return;
-        this.pending.delete(msg.id);
-        clearTimeout(pending.timer);
-        if (msg.ok) pending.resolve(msg.data);
-        else pending.reject(new FoundryError(msg.error));
-      }
+      if (!('id' in msg)) return;
+      const pending = this.pending.get(msg.id);
+      if (!pending) return;
+      this.pending.delete(msg.id);
+      clearTimeout(pending.timer);
+      if (msg.success) pending.resolve(msg.data ?? null);
+      else pending.reject(new FoundryError(msg.error ?? 'Foundry reported an error without a message.'));
     });
 
     ws.on('close', () => {
-      clearTimeout(helloTimer);
       if (this.socket !== ws) return;
-      console.log('[hub] Foundry disconnected');
       this.socket = undefined;
+      this.world = undefined;
       this.failAll('Foundry disconnected before answering.');
+      this.log('Foundry disconnected');
+      this.emit();
     });
+
+    // Learn which system the world runs, so system-specific tools can be listed.
+    this.call('get-world-info', {})
+      .then(info => {
+        const { world } = info as { world: { title: string; system: string; foundryVersion: string } };
+        this.world = { title: world.title, system: world.system, foundryVersion: world.foundryVersion };
+        this.log(`Foundry connected: "${this.world.title}" (${this.world.system}, Foundry ${this.world.foundryVersion})`);
+      })
+      .catch(error => this.log(`Foundry connected, but get-world-info failed: ${(error as Error).message}`))
+      .finally(() => this.emit());
   }
 
-  private adopt(ws: WebSocket, world: WorldInfo) {
-    if (this.socket && this.socket !== ws) {
-      this.socket.close(4003, 'replaced by a newer connection');
-      this.failAll('Foundry reconnected before answering.');
-    }
-    this.socket = ws;
-    this.world = world;
-    this.connectedAt = new Date();
-    ws.send(JSON.stringify({ type: 'welcome' }));
-    console.log(`[hub] connected: "${world?.title}" (${world?.system}, Foundry ${world?.foundryVersion}) as ${world?.gm}`);
+  private emit() {
+    for (const listener of this.listeners) listener();
   }
 
   private failAll(reason: string) {
