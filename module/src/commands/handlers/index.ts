@@ -241,3 +241,13 @@ export {
   pf2eCastSpellHandler,
   pf2ePostItemHandler
 } from '@/commands/handlers/item-use';
+
+// CoC7 handlers (added in this fork)
+export {
+  coc7RollCheckHandler,
+  coc7GetInvestigatorHandler,
+  coc7RequestRollHandler,
+  coc7LoseSanityHandler,
+  coc7SpendLuckHandler,
+  coc7DealDamageHandler
+} from '@/commands/handlers/coc7';

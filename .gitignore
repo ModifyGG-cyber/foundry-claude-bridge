@@ -1,5 +1,7 @@
 node_modules/
-dist/
+relay/dist/
+module/dist/module.js
+module/dist/module.js.map
 data/
 .env
 *.zip

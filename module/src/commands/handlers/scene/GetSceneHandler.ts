@@ -1,6 +1,7 @@
 import type { GetSceneParams, SceneDetailResult, SceneScreenshot } from '@/commands/types';
 import { getScene, mapSceneToDetail, type FoundryGame } from './sceneTypes';
 import { generateAsciiMap, type AsciiMapInput } from './AsciiMapGenerator';
+import { actorHp, gridBounds } from './sceneGeometry';
 import { addGridOverlay, removeGridOverlay, type OverlayCanvas } from './GridOverlay';
 
 declare const game: FoundryGame;
@@ -104,7 +105,7 @@ export function getSceneHandler(params: GetSceneParams): Promise<SceneDetailResu
       y: t.y,
       width: t.width ?? 1,
       height: t.height ?? 1,
-      hp: t.actor?.system?.attributes?.hp
+      hp: actorHp(t.actor?.system)
     }));
 
     const mapInput: AsciiMapInput = {
@@ -114,7 +115,8 @@ export function getSceneHandler(params: GetSceneParams): Promise<SceneDetailResu
       sceneName: scene.name,
       tokens,
       walls,
-      collisionBackend
+      collisionBackend,
+      bounds: scene.dimensions ? gridBounds(scene.dimensions, gridSize) : undefined
     };
 
     detail.asciiMap = generateAsciiMap(mapInput);

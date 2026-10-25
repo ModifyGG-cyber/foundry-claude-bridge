@@ -50,12 +50,13 @@ const text = res => res.content[0].text;
 const json = res => JSON.parse(text(res));
 
 // ── stdio mode (Claude Desktop) ───────────────────────────────────────────
+const STATE_DIR = mkdtempSync(join(tmpdir(), 'relay-state-'));
 {
   const PORT = 18788;
   const transport = new StdioClientTransport({
     command: 'node',
     args: ['dist/index.js'],
-    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: String(PORT), CALL_TIMEOUT_MS: '1500' },
+    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: String(PORT), CALL_TIMEOUT_MS: '1500', BRIDGE_STATE_DIR: STATE_DIR },
     stderr: 'pipe',
   });
   const client = new Client({ name: 'e2e', version: '0' });
@@ -67,7 +68,7 @@ const json = res => JSON.parse(text(res));
   try {
     await check('stdio: every tool is listed before Foundry connects', async () => {
       const { tools } = await client.listTools();
-      assert.equal(tools.length, 158);
+      assert.equal(tools.length, 164);
       const skill = tools.find(t => t.name === 'dnd5e-roll-skill');
       assert.deepEqual(skill.inputSchema.required, ['actorId', 'skill']);
       assert.equal(tools.find(t => t.name === 'clear-chat').annotations.destructiveHint, true);
@@ -102,6 +103,7 @@ const json = res => JSON.parse(text(res));
       assert.ok(listChanged >= 1);
       const { tools } = await client.listTools();
       assert.ok(!tools.some(t => t.name.startsWith('dnd5e-') || t.name.startsWith('pf2e-')), 'no dnd5e/pf2e tools in a CoC7 world');
+      assert.ok(tools.some(t => t.name === 'coc7-roll-check'), 'CoC7 tools in a CoC7 world');
       assert.ok(tools.some(t => t.name === 'get-actor'));
     });
 
@@ -144,8 +146,29 @@ const json = res => JSON.parse(text(res));
       await sleep(300);
       const { tools } = await client.listTools();
       assert.ok(tools.some(t => t.name === 'dnd5e-roll-skill'), 'dnd5e tools appear for a dnd5e world');
-      assert.ok(!tools.some(t => t.name.startsWith('pf2e-')));
+      assert.ok(!tools.some(t => t.name.startsWith('pf2e-') || t.name.startsWith('coc7-')));
       second.close();
+    });
+  } finally {
+    await client.close();
+  }
+}
+
+// A restarted relay lists tools for the last world's system before Foundry reconnects.
+{
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: ['dist/index.js'],
+    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: '18789', BRIDGE_STATE_DIR: STATE_DIR },
+    stderr: 'pipe',
+  });
+  const client = new Client({ name: 'e2e', version: '0' });
+  await client.connect(transport);
+  try {
+    await check('stdio: after a restart, the last world\'s system decides the tool list', async () => {
+      const { tools } = await client.listTools();
+      assert.ok(tools.some(t => t.name === 'dnd5e-roll-skill'));
+      assert.ok(!tools.some(t => t.name.startsWith('pf2e-') || t.name.startsWith('coc7-')));
     });
   } finally {
     await client.close();
@@ -164,6 +187,7 @@ const json = res => JSON.parse(text(res));
     RELAY_PASSWORD: 'correct horse battery',
     API_KEY: 'k'.repeat(40),
     DATA_DIR: mkdtempSync(join(tmpdir(), 'relay-')),
+    BRIDGE_STATE_DIR: mkdtempSync(join(tmpdir(), 'relay-state-')),
   };
   const relay = spawn('node', ['dist/index.js', '--http'], { env, stdio: ['ignore', 'ignore', 'pipe'] });
   await new Promise(resolve => relay.stderr.on('data', d => String(d).includes('listening') && resolve()));

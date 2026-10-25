@@ -101,6 +101,19 @@ async function moveAlongPath(
   return current;
 }
 
+/**
+ * Foundry's movement API can resolve the update before the document shows the new position,
+ * so report where the token was sent rather than reading x, y back.
+ */
+function movedResult(token: FoundryToken, destination: { x: number; y: number } | undefined): TokenResult {
+  const result = mapTokenToResult(token);
+  if (destination) {
+    result.x = destination.x;
+    result.y = destination.y;
+  }
+  return result;
+}
+
 const DOOR_OPEN_DELAY = 400;
 
 function delay(ms: number): Promise<void> {
@@ -235,7 +248,7 @@ export async function moveTokenHandler(params: MoveTokenParams): Promise<TokenRe
       if (params.rotation !== undefined) finalUpdate.rotation = params.rotation;
 
       const moved = await moveAlongPath(token, scene, pathResult.path, animate, finalUpdate);
-      const tokenResult = mapTokenToResult(moved);
+      const tokenResult = movedResult(moved, pathResult.path.at(-1));
       tokenResult.pathCost = pathResult.cost;
       return tokenResult;
     }
@@ -254,7 +267,7 @@ export async function moveTokenHandler(params: MoveTokenParams): Promise<TokenRe
   }
 
   await token.update(updateData, { animate });
-  return mapTokenToResult(token);
+  return movedResult(token, { x: params.x, y: params.y });
 }
 
 async function moveDoorAware(
@@ -289,14 +302,14 @@ async function moveDoorAware(
       const { token: moved, doorsOpened } = await moveAlongPathWithDoors(
         token, scene, [{ x: params.x, y: params.y }], animate, doorsOnDirect, finalUpdate
       );
-      const result = mapTokenToResult(moved);
+      const result = movedResult(moved, { x: params.x, y: params.y });
       if (doorsOpened.length > 0) result.doorsOpened = doorsOpened;
       return result;
     }
 
     const updateData: TokenUpdateData = { x: params.x, y: params.y, ...finalUpdate };
     await token.update(updateData, { animate });
-    return mapTokenToResult(token);
+    return movedResult(token, { x: params.x, y: params.y });
   }
 
   const pathResult = findGridPath({
@@ -321,7 +334,7 @@ async function moveDoorAware(
   const { token: moved, doorsOpened } = await moveAlongPathWithDoors(
     token, scene, pathResult.path, animate, doorsOnPath, finalUpdate
   );
-  const result = mapTokenToResult(moved);
+  const result = movedResult(moved, pathResult.path.at(-1));
   result.pathCost = pathResult.cost;
   if (doorsOpened.length > 0) result.doorsOpened = doorsOpened;
   return result;

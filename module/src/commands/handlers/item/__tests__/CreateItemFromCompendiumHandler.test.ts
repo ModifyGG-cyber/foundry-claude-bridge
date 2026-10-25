@@ -69,7 +69,8 @@ describe('createItemFromCompendiumHandler', () => {
         name: 'Longsword',
         type: 'weapon',
         img: 'icons/weapons/sword.png',
-        system: { damage: { parts: [['1d8', 'slashing']] } }
+        system: { damage: { parts: [['1d8', 'slashing']] } },
+        _stats: { compendiumSource: 'Compendium.dnd5e.items.Item.comp-item-123', duplicateSource: null }
       });
       expect(result).toEqual({
         id: 'new-item-456',

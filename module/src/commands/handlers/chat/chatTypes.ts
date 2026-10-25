@@ -17,6 +17,7 @@ export interface FoundryChatMessageDocument {
   rolls: FoundryRollJson[];
   isRoll: boolean;
   author: FoundryChatUser | null;
+  flags?: { CoC7?: { load?: Record<string, unknown> } };
   update(data: Record<string, unknown>): Promise<FoundryChatMessageDocument>;
   delete(): Promise<FoundryChatMessageDocument>;
   export(): string;
@@ -66,5 +67,5 @@ export const STRING_TO_STYLE: Record<string, number> = {
 };
 
 export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim();
+  return html.replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr)\b[^>]*>/gi, '\n').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/[ \t\f\v\u00a0]+/g, ' ').replace(/ ?\n[\s]*/g, '\n').trim();
 }

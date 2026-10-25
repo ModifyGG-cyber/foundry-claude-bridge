@@ -27,8 +27,8 @@ export const CATALOG: CatalogEntry[] = [
   e('pause-game', 'w', 'Pause the game for everyone.'),
   e('resume-game', 'w', 'Unpause the game.'),
   e('notify', 'w', 'Show a toast notification on every client. type is info, warning or error.'),
-  e('pan-canvas', 'w', 'Pan and/or zoom every client\'s canvas to scene-pixel x, y and scale.'),
-  e('ping-location', 'w', 'Drop a ping marker at scene-pixel x, y that all players see.'),
+  e('pan-canvas', 'w', 'Pan and/or zoom every client\'s canvas to canvas-pixel x, y and scale.'),
+  e('ping-location', 'w', 'Drop a ping marker at canvas-pixel x, y that all players see.'),
 
   // Dice, chat
   e('roll-dice', 'w', 'Roll any Foundry dice formula ("1d100", "4d6kh3", "2d20kl1"). showInChat posts the roll; flavor labels it.'),
@@ -118,8 +118,8 @@ export const CATALOG: CatalogEntry[] = [
 
   // Scenes
   e('get-scenes-list', 'r', 'List scenes with ids and which one is active.'),
-  e('get-scene', 'r', 'Full scene details: grid, tokens, walls, lights, notes. includeScreenshot adds an image of the canvas.'),
-  e('capture-scene', 'r', 'Screenshot of the current canvas with a coordinate grid, for spatial reasoning.'),
+  e('get-scene', 'r', 'Full scene details: grid, tokens, walls, lights, notes, an ASCII map, and mapArea (where the map sits on the canvas). includeScreenshot adds an image of the canvas.'),
+  e('capture-scene', 'r', 'Screenshot of the current canvas labelled with grid cells (canvas pixel / grid size), the same cells as the ASCII map.'),
   e('activate-scene', 'w', 'Make a scene the active one, moving all players to it.'),
   e('view-scene', 'w', 'Switch only the GM\'s view to a scene without moving players.'),
   e('create-scene', 'w', 'Create a scene with background, grid and size.'),
@@ -129,7 +129,7 @@ export const CATALOG: CatalogEntry[] = [
 
   // Walls, doors, notes
   e('get-walls', 'r', 'Walls and doors on a scene. door 1 = door, 2 = secret door.'),
-  e('create-wall', 'w', 'Create a wall from coordinates c = [x1, y1, x2, y2].'),
+  e('create-wall', 'w', 'Create a wall from canvas-pixel coordinates c = [x1, y1, x2, y2].'),
   e('update-wall', 'w', 'Change a wall.'),
   e('delete-wall', 'd', 'Delete a wall.'),
   e('set-door-state', 'w', 'Open (1), close (0) or lock (2) a door by its wall id.'),
@@ -143,8 +143,8 @@ export const CATALOG: CatalogEntry[] = [
   e('get-token', 'r', 'One token\'s details.'),
   e('get-token-by-actor', 'r', 'Find the token(s) of an actor on a scene.'),
   e('get-tokens-in-range', 'r', 'Tokens within a distance (scene units) of a point.'),
-  e('create-token', 'w', 'Place a token for an actor at scene-pixel x, y (top-left of the grid cell).'),
-  e('move-token', 'w', 'Move a token to x, y. It walks around walls with pathfinding and can open doors on the way if canOpenDoors is set.'),
+  e('create-token', 'w', 'Place a token for an actor at canvas-pixel x, y (top-left of the grid cell), using the actor\'s prototype token.'),
+  e('move-token', 'w', 'Move a token to canvas-pixel x, y. It walks around walls with pathfinding and can open doors on the way if canOpenDoors is set.'),
   e('update-token', 'w', 'Change a token: name, visibility, disposition, elevation, scale, actor link.'),
   e('delete-token', 'd', 'Remove a token from a scene (the actor stays).'),
   e('set-token-target', 'w', 'Target or untarget a token for the GM, as used by attack automation.'),
@@ -211,6 +211,14 @@ export const CATALOG: CatalogEntry[] = [
   e('pf2e/remove-condition', 'w', 'PF2e remove a condition.'),
   e('pf2e/filter-compendium-actors', 'r', 'PF2e search compendium creatures by level, traits, rarity and size.'),
   e('pf2e/filter-compendium-items', 'r', 'PF2e search compendium items by level, traits, rarity, price and tradition.'),
+
+  // Call of Cthulhu 7th Edition (added in the fork)
+  e('coc7/get-investigator', 'r', 'CoC7 compact sheet: characteristics, HP/MP/SAN/Luck, every skill with its value, weapons and statuses. Use it before rolling.'),
+  e('coc7/roll-check', 'w', 'CoC7 roll a skill (by sheet name, e.g. "Spot Hidden"), characteristic (str, con, siz, dex, app, int, pow, edu) or attribute (lck, san) as the actor, with difficulty regular/hard/extreme/critical and bonusDice -2..2 (negative = penalty dice). Posts the normal system card (push, spend Luck) and returns the total, success level and whether it passed.'),
+  e('coc7/request-roll', 'w', 'CoC7 post clickable roll requests so players roll themselves: skill, characteristic or attribute checks, and sanity checks with sanMin/sanMax (e.g. 0 / 1D6) and a reason. Several requests can go in one message.'),
+  e('coc7/lose-sanity', 'w', 'CoC7 take SAN from an actor directly (a number or formula such as "1D6"), recording the reason so repeated exposure is tracked.'),
+  e('coc7/spend-luck', 'w', 'CoC7 spend Luck points; refuses if the actor has too little.'),
+  e('coc7/deal-damage', 'w', 'CoC7 deal damage (number or formula) to an actor, applying armour unless ignoreArmor; the system sets dying/dead/major wound conditions.'),
 ];
 
 export const toolName = (command: string) => command.replace('/', '-');

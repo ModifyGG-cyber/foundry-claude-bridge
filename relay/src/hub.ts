@@ -1,4 +1,6 @@
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { IncomingMessage, Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 
@@ -42,8 +44,42 @@ export class FoundryHub {
   private listeners = new Set<() => void>();
   world?: WorldSummary;
   connectedAt?: Date;
+  private rememberedSystem?: string;
 
-  constructor(private key: string, private timeoutMs: number, private log: (msg: string) => void) {}
+  /**
+   * stateFile remembers the last world's game system, so that the tool list Claude reads before
+   * Foundry connects already leaves out other systems' tools.
+   */
+  constructor(
+    private key: string,
+    private timeoutMs: number,
+    private log: (msg: string) => void,
+    private stateFile?: string,
+  ) {
+    if (!stateFile) return;
+    try {
+      const saved = JSON.parse(readFileSync(stateFile, 'utf8')) as { system?: unknown };
+      if (typeof saved.system === 'string') this.rememberedSystem = saved.system;
+    } catch {
+      // No state yet.
+    }
+  }
+
+  /** The connected world's system, or the last one seen while Foundry is offline. */
+  get system(): string | undefined {
+    return this.world?.system ?? this.rememberedSystem;
+  }
+
+  private rememberSystem(system: string) {
+    this.rememberedSystem = system;
+    if (!this.stateFile) return;
+    try {
+      mkdirSync(dirname(this.stateFile), { recursive: true });
+      writeFileSync(this.stateFile, JSON.stringify({ system }));
+    } catch (error) {
+      this.log(`could not save ${this.stateFile}: ${(error as Error).message}`);
+    }
+  }
 
   get connected() {
     return this.socket?.readyState === WebSocket.OPEN;
@@ -125,6 +161,7 @@ export class FoundryHub {
       .then(info => {
         const { world } = info as { world: { title: string; system: string; foundryVersion: string } };
         this.world = { title: world.title, system: world.system, foundryVersion: world.foundryVersion };
+        if (world.system) this.rememberSystem(world.system);
         this.log(`Foundry connected: "${this.world.title}" (${this.world.system}, Foundry ${this.world.foundryVersion})`);
       })
       .catch(error => this.log(`Foundry connected, but get-world-info failed: ${(error as Error).message}`))

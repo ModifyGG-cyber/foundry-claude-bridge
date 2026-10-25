@@ -1,5 +1,6 @@
 import type {
   SceneDetailResult,
+  SceneMapArea,
   SceneSummaryResult,
   SceneSummary,
   SceneGridType,
@@ -11,6 +12,7 @@ import type {
   SceneRegionResult,
   SceneTokenSummary
 } from '@/commands/types';
+import { actorHp, gridBounds, type SceneRect } from './sceneGeometry';
 
 export interface FoundryNote {
   x: number;
@@ -98,6 +100,7 @@ export interface FoundryToken {
         hp?: { value: number; max: number };
         ac?: { value: number };
       };
+      attribs?: { hp?: { value?: number | null; max?: number | null } };
     };
     statuses?: Set<string>;
   } | null;
@@ -120,6 +123,8 @@ export interface FoundryScene {
   drawings: { contents: FoundryDrawing[] } | undefined;
   regions: { contents: FoundryRegion[] } | undefined;
   tokens: { contents: FoundryToken[] } | undefined;
+  /** Computed canvas dimensions (Scene#dimensions); the map area sits inside the padding. */
+  dimensions?: SceneRect | undefined;
   activate(): Promise<FoundryScene>;
 }
 
@@ -246,7 +251,7 @@ export function mapTokenToSummary(token: FoundryToken, gridSize: number): SceneT
     conditions: token.actor?.statuses ? [...token.actor.statuses] : []
   };
 
-  const hp = token.actor?.system?.attributes?.hp;
+  const hp = actorHp(token.actor?.system);
   if (hp) {
     result.hp = { value: hp.value, max: hp.max };
   }
@@ -257,6 +262,18 @@ export function mapTokenToSummary(token: FoundryToken, gridSize: number): SceneT
   }
 
   return result;
+}
+
+function mapArea(rect: SceneRect, gridSize: number): SceneMapArea {
+  const cells = gridBounds(rect, gridSize);
+  return {
+    x: rect.sceneX,
+    y: rect.sceneY,
+    width: rect.sceneWidth,
+    height: rect.sceneHeight,
+    firstCell: { gx: cells.minGX, gy: cells.minGY },
+    lastCell: { gx: cells.maxGX, gy: cells.maxGY }
+  };
 }
 
 export function mapSceneToDetail(scene: FoundryScene): SceneDetailResult {
@@ -282,6 +299,7 @@ export function mapSceneToDetail(scene: FoundryScene): SceneDetailResult {
     drawings: (scene.drawings?.contents ?? []).map(mapDrawingToResult),
     regions: (scene.regions?.contents ?? []).map(mapRegionToResult),
     tokens: (scene.tokens?.contents ?? []).map(t => mapTokenToSummary(t, gridSize)),
+    ...(scene.dimensions ? { mapArea: mapArea(scene.dimensions, gridSize) } : {}),
     asciiMap: ''
   };
 }

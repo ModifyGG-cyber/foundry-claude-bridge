@@ -1,5 +1,6 @@
 import type { TokenResult, TokenDetail, TokenDisposition } from '@/commands/types';
 import type { FoundryWallDocument } from '@/commands/handlers/door/doorTypes';
+import { actorHp } from '@/commands/handlers/scene/sceneGeometry';
 
 export interface TokenUpdateData {
   x?: number;
@@ -39,6 +40,7 @@ export interface FoundryToken {
         hp?: { value: number; max: number };
         ac?: { value: number };
       };
+      attribs?: { hp?: { value?: number | null; max?: number | null } };
     };
     statuses?: Set<string>;
   } | null;
@@ -116,7 +118,7 @@ export function mapTokenToResult(token: FoundryToken): TokenResult {
     conditions: token.actor?.statuses ? [...token.actor.statuses] : []
   };
 
-  const hp = token.actor?.system?.attributes?.hp;
+  const hp = actorHp(token.actor?.system);
   if (hp) {
     result.hp = { value: hp.value, max: hp.max };
   }
