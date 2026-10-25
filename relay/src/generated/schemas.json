@@ -1,0 +1,4893 @@
+{
+ "roll-dice": {
+  "type": "object",
+  "properties": {
+   "formula": {
+    "type": "string"
+   },
+   "showInChat": {
+    "type": "boolean"
+   },
+   "flavor": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "formula"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/roll-ability": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "ability": {
+    "type": "string",
+    "enum": [
+     "str",
+     "dex",
+     "con",
+     "int",
+     "wis",
+     "cha"
+    ]
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "ability"
+  ],
+  "additionalProperties": false
+ },
+ "roll-ability": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "ability": {
+    "type": "string",
+    "enum": [
+     "str",
+     "dex",
+     "con",
+     "int",
+     "wis",
+     "cha"
+    ]
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "ability"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/roll-skill": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "skill": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "skill"
+  ],
+  "additionalProperties": false
+ },
+ "roll-skill": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "skill": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "skill"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/roll-save": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "ability": {
+    "type": "string",
+    "enum": [
+     "str",
+     "dex",
+     "con",
+     "int",
+     "wis",
+     "cha"
+    ]
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "ability"
+  ],
+  "additionalProperties": false
+ },
+ "roll-save": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "ability": {
+    "type": "string",
+    "enum": [
+     "str",
+     "dex",
+     "con",
+     "int",
+     "wis",
+     "cha"
+    ]
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "ability"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/roll-attack": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "roll-attack": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/roll-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "critical": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "roll-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "critical": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/roll-perception": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "roll-perception": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/filter-compendium-actors": {
+  "type": "object",
+  "properties": {
+   "packIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "creatureType": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "size": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "disposition": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "cr": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "level": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "maxHp": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ac": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "abilities": {
+    "type": "object",
+    "properties": {
+     "str": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "dex": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "con": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "int": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "wis": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "cha": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     }
+    },
+    "additionalProperties": false
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "dnd5e/filter-compendium-items": {
+  "type": "object",
+  "properties": {
+   "packIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "enum": [
+      "weapon",
+      "equipment",
+      "consumable",
+      "tool",
+      "container",
+      "loot",
+      "spell",
+      "feat",
+      "background",
+      "race",
+      "class",
+      "subclass",
+      "feature"
+     ]
+    }
+   },
+   "rarity": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "enum": [
+      "common",
+      "uncommon",
+      "rare",
+      "veryRare",
+      "legendary",
+      "artifact"
+     ]
+    }
+   },
+   "spellSchool": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "enum": [
+      "abjuration",
+      "conjuration",
+      "divination",
+      "enchantment",
+      "evocation",
+      "illusion",
+      "necromancy",
+      "transmutation"
+     ]
+    }
+   },
+   "requiresAttunement": {
+    "type": "boolean"
+   },
+   "identified": {
+    "type": "boolean"
+   },
+   "hasActivities": {
+    "type": "boolean"
+   },
+   "isContainer": {
+    "type": "boolean"
+   },
+   "weight": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "price": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "spellLevel": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "pf2e/roll-skill": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "skill": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "skill"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/roll-save": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "save": {
+    "type": "string",
+    "enum": [
+     "fortitude",
+     "reflex",
+     "will"
+    ]
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "save"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/roll-perception": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/set-condition": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "slug": {
+    "type": "string"
+   },
+   "value": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "actorId",
+   "slug"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/remove-condition": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "slug": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId",
+   "slug"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/get-conditions": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/increase-condition": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "slug": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId",
+   "slug"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/decrease-condition": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "slug": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId",
+   "slug"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/list-strikes": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/roll-strike": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "slug": {
+    "type": "string"
+   },
+   "mapIncrease": {
+    "type": "number"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "slug"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/roll-strike-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "slug": {
+    "type": "string"
+   },
+   "critical": {
+    "type": "boolean"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "slug"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/use-consumable": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "quantity": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/cast-spell": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "spellId": {
+    "type": "string"
+   },
+   "rank": {
+    "type": "number"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "spellId"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/post-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "pf2e/filter-compendium-actors": {
+  "type": "object",
+  "properties": {
+   "packIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "level": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "traits": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "rarity": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "size": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "maxHp": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ac": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "pf2e/filter-compendium-items": {
+  "type": "object",
+  "properties": {
+   "packIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "level": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "traits": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "rarity": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "category": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "traditions": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "priceGold": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "coc7/get-investigator": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "coc7/roll-check": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "kind": {
+    "type": "string",
+    "enum": [
+     "skill",
+     "characteristic",
+     "attribute"
+    ]
+   },
+   "name": {
+    "type": "string",
+    "description": "Skill name as on the sheet (\"Spot Hidden\"), characteristic key (str, con, siz, dex, app, int, pow, edu) or attribute key (lck, san)."
+   },
+   "difficulty": {
+    "type": "string",
+    "enum": [
+     "regular",
+     "hard",
+     "extreme",
+     "critical"
+    ]
+   },
+   "bonusDice": {
+    "type": "number",
+    "description": "Bonus dice (1 or 2) as positive numbers, penalty dice (-1 or -2) as negative. Default 0."
+   },
+   "blind": {
+    "type": "boolean",
+    "description": "Hide the result from players."
+   }
+  },
+  "required": [
+   "kind",
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/request-roll": {
+  "type": "object",
+  "properties": {
+   "requests": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "anyOf": [
+        {
+         "type": "string",
+         "enum": [
+          "skill",
+          "characteristic",
+          "attribute"
+         ]
+        },
+        {
+         "type": "string",
+         "const": "sanity"
+        }
+       ]
+      },
+      "name": {
+       "type": "string",
+       "description": "Skill name, characteristic or attribute key. Not used for sanity."
+      },
+      "difficulty": {
+       "type": "string",
+       "enum": [
+        "regular",
+        "hard",
+        "extreme",
+        "critical"
+       ]
+      },
+      "bonusDice": {
+       "type": "number"
+      },
+      "sanMin": {
+       "type": "string",
+       "description": "Sanity only: SAN lost on a success, e.g. \"0\" or \"1\"."
+      },
+      "sanMax": {
+       "type": "string",
+       "description": "Sanity only: SAN lost on a failure, e.g. \"1D6\"."
+      },
+      "sanReason": {
+       "type": "string",
+       "description": "Sanity only: what caused it, tracked for repeated exposure."
+      },
+      "blind": {
+       "type": "boolean"
+      },
+      "label": {
+       "type": "string",
+       "description": "Button text; defaults to the check name."
+      }
+     },
+     "required": [
+      "kind"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "message": {
+    "type": "string",
+    "description": "Text shown above the buttons."
+   },
+   "whisperTo": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    },
+    "description": "User ids to whisper the request to; omitted = everyone."
+   }
+  },
+  "required": [
+   "requests"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/lose-sanity": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": [
+     "number",
+     "string"
+    ],
+    "description": "A number or a dice formula (\"1D6\")."
+   },
+   "reason": {
+    "type": "string",
+    "description": "The cause, e.g. \"Ghoul\". Repeated causes are tracked by the system."
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/spend-luck": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/deal-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": [
+     "number",
+     "string"
+    ],
+    "description": "A number or a dice formula (\"1D8+1D4\")."
+   },
+   "ignoreArmor": {
+    "type": "boolean",
+    "description": "Skip the actor's armour. Default false."
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "get-world-info": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-actors": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "filter-actors": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "creatureType": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "size": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "disposition": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "hasPlayerOwner": {
+    "type": "boolean"
+   },
+   "cr": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "level": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "maxHp": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "currentHp": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "ac": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "abilities": {
+    "type": "object",
+    "properties": {
+     "str": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "dex": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "con": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "int": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "wis": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "cha": {
+      "type": "object",
+      "properties": {
+       "min": {
+        "type": "number"
+       },
+       "max": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     }
+    },
+    "additionalProperties": false
+   },
+   "folder": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "recursive": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "filter-items": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "enum": [
+      "weapon",
+      "equipment",
+      "consumable",
+      "tool",
+      "container",
+      "loot",
+      "spell",
+      "feat",
+      "background",
+      "race",
+      "class",
+      "subclass",
+      "feature"
+     ]
+    }
+   },
+   "rarity": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "enum": [
+      "common",
+      "uncommon",
+      "rare",
+      "veryRare",
+      "legendary",
+      "artifact"
+     ]
+    }
+   },
+   "spellSchool": {
+    "type": "array",
+    "items": {
+     "type": "string",
+     "enum": [
+      "abjuration",
+      "conjuration",
+      "divination",
+      "enchantment",
+      "evocation",
+      "illusion",
+      "necromancy",
+      "transmutation"
+     ]
+    }
+   },
+   "requiresAttunement": {
+    "type": "boolean"
+   },
+   "identified": {
+    "type": "boolean"
+   },
+   "hasActivities": {
+    "type": "boolean"
+   },
+   "isContainer": {
+    "type": "boolean"
+   },
+   "weight": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "price": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "spellLevel": {
+    "type": "object",
+    "properties": {
+     "min": {
+      "type": "number"
+     },
+     "max": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "folder": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "recursive": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-actor": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "create-actor": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "system": {
+    "type": "object",
+    "additionalProperties": {}
+   }
+  },
+  "required": [
+   "name",
+   "type"
+  ],
+  "additionalProperties": false
+ },
+ "create-actor-from-compendium": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "packId",
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "update-actor": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead: the synthetic actor of an unlinked token, or the linked actor."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "name": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   },
+   "system": {
+    "type": "object",
+    "additionalProperties": {}
+   }
+  },
+  "additionalProperties": false
+ },
+ "dnd5e/apply-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead: an unlinked token takes the hit alone."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "amount": {
+    "type": "number",
+    "description": "Damage amount before resistances; temp HP absorbs it first."
+   },
+   "type": {
+    "type": "string",
+    "description": "dnd5e damage type (`slashing`, `fire`, …); resistances and immunities apply when given."
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "apply-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead: an unlinked token takes the hit alone."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "amount": {
+    "type": "number",
+    "description": "Damage amount before resistances; temp HP absorbs it first."
+   },
+   "type": {
+    "type": "string",
+    "description": "dnd5e damage type (`slashing`, `fire`, …); resistances and immunities apply when given."
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/apply-healing": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "apply-healing": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "delete-actor": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "send-chat-message": {
+  "type": "object",
+  "properties": {
+   "content": {
+    "type": "string"
+   },
+   "speaker": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   },
+   "flavor": {
+    "type": "string"
+   },
+   "whisperTo": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "ic",
+     "ooc",
+     "emote"
+    ]
+   }
+  },
+  "required": [
+   "content"
+  ],
+  "additionalProperties": false
+ },
+ "create-journal": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   },
+   "content": {
+    "type": "string"
+   },
+   "pageType": {
+    "type": "string",
+    "enum": [
+     "text",
+     "image",
+     "video",
+     "pdf"
+    ]
+   }
+  },
+  "required": [
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "update-journal": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "journalId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-journal": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "journalId"
+  ],
+  "additionalProperties": false
+ },
+ "create-journal-page": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "text",
+     "image",
+     "video",
+     "pdf"
+    ]
+   },
+   "content": {
+    "type": "string"
+   },
+   "src": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "journalId",
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "update-journal-page": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   },
+   "pageId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "content": {
+    "type": "string"
+   },
+   "src": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "journalId",
+   "pageId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-journal-page": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   },
+   "pageId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "journalId",
+   "pageId"
+  ],
+  "additionalProperties": false
+ },
+ "create-combat": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "activate": {
+    "type": "boolean"
+   }
+  },
+  "additionalProperties": false
+ },
+ "add-combatant": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   },
+   "initiative": {
+    "type": "number"
+   },
+   "hidden": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "remove-combatant": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "combatantId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "combatantId"
+  ],
+  "additionalProperties": false
+ },
+ "start-combat": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "end-combat": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "delete-combat": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "next-turn": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "previous-turn": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-combat-state": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "set-turn": {
+  "type": "object",
+  "properties": {
+   "combatantId": {
+    "type": "string"
+   },
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "combatantId"
+  ],
+  "additionalProperties": false
+ },
+ "roll-initiative": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "combatantIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "formula": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "combatantIds"
+  ],
+  "additionalProperties": false
+ },
+ "set-initiative": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "combatantId": {
+    "type": "string"
+   },
+   "initiative": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "combatantId",
+   "initiative"
+  ],
+  "additionalProperties": false
+ },
+ "roll-all-initiative": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "formula": {
+    "type": "string"
+   },
+   "npcsOnly": {
+    "type": "boolean"
+   }
+  },
+  "additionalProperties": false
+ },
+ "update-combatant": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "combatantId": {
+    "type": "string"
+   },
+   "initiative": {
+    "type": "number"
+   },
+   "defeated": {
+    "type": "boolean"
+   },
+   "hidden": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "combatantId"
+  ],
+  "additionalProperties": false
+ },
+ "set-combatant-defeated": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "combatantId": {
+    "type": "string"
+   },
+   "defeated": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "combatantId",
+   "defeated"
+  ],
+  "additionalProperties": false
+ },
+ "toggle-combatant-visibility": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   },
+   "combatantId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "combatantId"
+  ],
+  "additionalProperties": false
+ },
+ "create-token": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   },
+   "x": {
+    "type": "number"
+   },
+   "y": {
+    "type": "number"
+   },
+   "hidden": {
+    "type": "boolean"
+   },
+   "elevation": {
+    "type": "number"
+   },
+   "rotation": {
+    "type": "number"
+   },
+   "scale": {
+    "type": "number"
+   },
+   "actorLink": {
+    "type": "boolean",
+    "description": "Link the token to its actor (shared HP/effects) or make it an independent copy."
+   }
+  },
+  "required": [
+   "actorId",
+   "x",
+   "y"
+  ],
+  "additionalProperties": false
+ },
+ "delete-token": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "tokenId"
+  ],
+  "additionalProperties": false
+ },
+ "move-token": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   },
+   "x": {
+    "type": "number"
+   },
+   "y": {
+    "type": "number"
+   },
+   "elevation": {
+    "type": "number"
+   },
+   "rotation": {
+    "type": "number"
+   },
+   "animate": {
+    "type": "boolean"
+   },
+   "canOpenDoors": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "tokenId",
+   "x",
+   "y"
+  ],
+  "additionalProperties": false
+ },
+ "update-token": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   },
+   "hidden": {
+    "type": "boolean"
+   },
+   "elevation": {
+    "type": "number"
+   },
+   "rotation": {
+    "type": "number"
+   },
+   "scale": {
+    "type": "number"
+   },
+   "name": {
+    "type": "string"
+   },
+   "displayName": {
+    "type": "number"
+   },
+   "disposition": {
+    "type": "number"
+   },
+   "lockRotation": {
+    "type": "boolean"
+   },
+   "actorLink": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "tokenId"
+  ],
+  "additionalProperties": false
+ },
+ "get-scene-tokens": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-token": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "tokenId"
+  ],
+  "additionalProperties": false
+ },
+ "get-token-by-actor": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "set-token-target": {
+  "type": "object",
+  "properties": {
+   "tokenId": {
+    "type": "string"
+   },
+   "targeted": {
+    "type": "boolean"
+   },
+   "releaseOthers": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "tokenId",
+   "targeted"
+  ],
+  "additionalProperties": false
+ },
+ "clear-targets": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-tokens-in-range": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "originX": {
+    "type": "number"
+   },
+   "originY": {
+    "type": "number"
+   },
+   "range": {
+    "type": "number"
+   },
+   "excludeTokenId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "originX",
+   "originY",
+   "range"
+  ],
+  "additionalProperties": false
+ },
+ "get-actor-items": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string"
+   },
+   "equipped": {
+    "type": "boolean"
+   },
+   "hasActivities": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/use-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "activityId": {
+    "type": "string"
+   },
+   "activityType": {
+    "type": "string"
+   },
+   "consume": {
+    "type": "boolean"
+   },
+   "scaling": {
+    "type": "number"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "use-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "activityId": {
+    "type": "string"
+   },
+   "activityType": {
+    "type": "string"
+   },
+   "consume": {
+    "type": "boolean"
+   },
+   "scaling": {
+    "type": "number"
+   },
+   "showInChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "add-item-to-actor": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "system": {
+    "type": "object",
+    "properties": {
+     "description": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     "quantity": {
+      "type": "number"
+     },
+     "weight": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "number"
+       },
+       "units": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     "price": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "number"
+       },
+       "denomination": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     "rarity": {
+      "type": "string"
+     },
+     "identified": {
+      "type": "boolean"
+     },
+     "equipped": {
+      "type": "boolean"
+     },
+     "attunement": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "required": [
+   "actorId",
+   "name",
+   "type"
+  ],
+  "additionalProperties": false
+ },
+ "add-item-from-compendium": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "packId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "quantity": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "actorId",
+   "packId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "update-actor-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "system": {
+    "type": "object",
+    "properties": {
+     "description": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     "quantity": {
+      "type": "number"
+     },
+     "weight": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "number"
+       },
+       "units": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     "price": {
+      "type": "object",
+      "properties": {
+       "value": {
+        "type": "number"
+       },
+       "denomination": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "value"
+      ],
+      "additionalProperties": false
+     },
+     "rarity": {
+      "type": "string"
+     },
+     "identified": {
+      "type": "boolean"
+     },
+     "equipped": {
+      "type": "boolean"
+     },
+     "attunement": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-actor-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "create-item": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "system": {
+    "type": "object",
+    "additionalProperties": {}
+   }
+  },
+  "required": [
+   "name",
+   "type"
+  ],
+  "additionalProperties": false
+ },
+ "create-item-from-compendium": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "packId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "update-item": {
+  "type": "object",
+  "properties": {
+   "itemId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "folder": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "system": {
+    "type": "object",
+    "additionalProperties": {}
+   }
+  },
+  "required": [
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-item": {
+  "type": "object",
+  "properties": {
+   "itemId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "get-actor-effects": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead (unlinked tokens keep their own effects)."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "includeDisabled": {
+    "type": "boolean"
+   }
+  },
+  "additionalProperties": false
+ },
+ "toggle-actor-status": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead (unlinked tokens keep their own effects)."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "statusId": {
+    "type": "string"
+   },
+   "active": {
+    "type": "boolean"
+   },
+   "overlay": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "statusId"
+  ],
+  "additionalProperties": false
+ },
+ "add-actor-effect": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead (unlinked tokens keep their own effects)."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "name": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "disabled": {
+    "type": "boolean"
+   },
+   "statuses": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "changes": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "key": {
+       "type": "string"
+      },
+      "value": {
+       "type": "string"
+      },
+      "mode": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "key",
+      "value",
+      "mode"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "duration": {
+    "type": "object",
+    "properties": {
+     "seconds": {
+      "type": "number"
+     },
+     "rounds": {
+      "type": "number"
+     },
+     "turns": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   },
+   "origin": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "remove-actor-effect": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead (unlinked tokens keep their own effects)."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "effectId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "effectId"
+  ],
+  "additionalProperties": false
+ },
+ "update-actor-effect": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string",
+    "description": "World actor id. Either this or `tokenId` is required."
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token's actor instead (unlinked tokens keep their own effects)."
+   },
+   "sceneId": {
+    "type": "string",
+    "description": "Scene the token is on; defaults to the active scene."
+   },
+   "effectId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "disabled": {
+    "type": "boolean"
+   },
+   "changes": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "key": {
+       "type": "string"
+      },
+      "value": {
+       "type": "string"
+      },
+      "mode": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "key",
+      "value",
+      "mode"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "duration": {
+    "type": "object",
+    "properties": {
+     "seconds": {
+      "type": "number"
+     },
+     "rounds": {
+      "type": "number"
+     },
+     "turns": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "required": [
+   "effectId"
+  ],
+  "additionalProperties": false
+ },
+ "get-scene": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "includeScreenshot": {
+    "type": "boolean"
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-scenes-list": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "activate-scene": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "sceneId"
+  ],
+  "additionalProperties": false
+ },
+ "create-scene": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "width": {
+    "type": "number"
+   },
+   "height": {
+    "type": "number"
+   },
+   "grid": {
+    "type": "object",
+    "properties": {
+     "type": {
+      "type": "string",
+      "enum": [
+       "gridless",
+       "square",
+       "hexPointyOdd",
+       "hexPointyEven",
+       "hexFlatOdd",
+       "hexFlatEven"
+      ]
+     },
+     "size": {
+      "type": "number"
+     },
+     "distance": {
+      "type": "number"
+     },
+     "units": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "background": {
+    "type": "string"
+   },
+   "foreground": {
+    "type": "string"
+   },
+   "padding": {
+    "type": "number"
+   },
+   "navigation": {
+    "type": "boolean"
+   },
+   "navName": {
+    "type": "string"
+   },
+   "navOrder": {
+    "type": "number"
+   },
+   "fogExploration": {
+    "type": "boolean"
+   },
+   "darkness": {
+    "type": "number"
+   },
+   "folder": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "update-scene": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "width": {
+    "type": "number"
+   },
+   "height": {
+    "type": "number"
+   },
+   "grid": {
+    "type": "object",
+    "properties": {
+     "type": {
+      "type": "string",
+      "enum": [
+       "gridless",
+       "square",
+       "hexPointyOdd",
+       "hexPointyEven",
+       "hexFlatOdd",
+       "hexFlatEven"
+      ]
+     },
+     "size": {
+      "type": "number"
+     },
+     "distance": {
+      "type": "number"
+     },
+     "units": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false
+   },
+   "background": {
+    "type": "string"
+   },
+   "foreground": {
+    "type": "string"
+   },
+   "padding": {
+    "type": "number"
+   },
+   "navigation": {
+    "type": "boolean"
+   },
+   "navName": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "navOrder": {
+    "type": "number"
+   },
+   "fogExploration": {
+    "type": "boolean"
+   },
+   "darkness": {
+    "type": "number"
+   },
+   "folder": {
+    "type": [
+     "string",
+     "null"
+    ]
+   }
+  },
+  "required": [
+   "sceneId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-scene": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "sceneId"
+  ],
+  "additionalProperties": false
+ },
+ "clone-scene": {
+  "type": "object",
+  "properties": {
+   "sourceId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "sourceId"
+  ],
+  "additionalProperties": false
+ },
+ "view-scene": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "sceneId"
+  ],
+  "additionalProperties": false
+ },
+ "dnd5e/activate-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "activityId": {
+    "type": "string"
+   },
+   "activityType": {
+    "type": "string"
+   },
+   "targetTokenIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "templatePosition": {
+    "type": "object",
+    "properties": {
+     "x": {
+      "type": "number"
+     },
+     "y": {
+      "type": "number"
+     },
+     "direction": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "x",
+     "y"
+    ],
+    "additionalProperties": false
+   },
+   "spellLevel": {
+    "type": "number"
+   },
+   "attackerTokenId": {
+    "type": "string",
+    "description": "Act as this token of the actor (one of several copies); its actor for an unlinked token."
+   },
+   "attackMode": {
+    "type": "string",
+    "description": "dnd5e attack mode: `oneHanded`, `twoHanded`, `offhand`, `thrown`, `thrown-offhand`."
+   },
+   "ammunition": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "boolean",
+      "const": false
+     }
+    ],
+    "description": "Ammunition item id, or `false` to attack without consuming any."
+   },
+   "consume": {
+    "type": "object",
+    "properties": {
+     "spellSlot": {
+      "type": "boolean"
+     },
+     "itemUses": {
+      "type": "boolean"
+     },
+     "ammunition": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "fastForward": {
+    "type": "boolean",
+    "description": "Skip every configuration dialog and auto-roll. Default true."
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "attackBonus": {
+    "type": [
+     "number",
+     "string"
+    ],
+    "description": "One-off bonus to this attack roll (`2`, `\"1d4\"`)."
+   },
+   "damageBonus": {
+    "type": "string",
+    "description": "One-off bonus to the first damage part (`\"1d6\"` for Sneak Attack)."
+   },
+   "targetAcBonus": {
+    "type": "number",
+    "description": "Added to every target's AC for this hit check (Midi-QOL only)."
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "activate-item": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "itemId": {
+    "type": "string"
+   },
+   "activityId": {
+    "type": "string"
+   },
+   "activityType": {
+    "type": "string"
+   },
+   "targetTokenIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "templatePosition": {
+    "type": "object",
+    "properties": {
+     "x": {
+      "type": "number"
+     },
+     "y": {
+      "type": "number"
+     },
+     "direction": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "x",
+     "y"
+    ],
+    "additionalProperties": false
+   },
+   "spellLevel": {
+    "type": "number"
+   },
+   "attackerTokenId": {
+    "type": "string",
+    "description": "Act as this token of the actor (one of several copies); its actor for an unlinked token."
+   },
+   "attackMode": {
+    "type": "string",
+    "description": "dnd5e attack mode: `oneHanded`, `twoHanded`, `offhand`, `thrown`, `thrown-offhand`."
+   },
+   "ammunition": {
+    "anyOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "boolean",
+      "const": false
+     }
+    ],
+    "description": "Ammunition item id, or `false` to attack without consuming any."
+   },
+   "consume": {
+    "type": "object",
+    "properties": {
+     "spellSlot": {
+      "type": "boolean"
+     },
+     "itemUses": {
+      "type": "boolean"
+     },
+     "ammunition": {
+      "type": "boolean"
+     }
+    },
+    "additionalProperties": false
+   },
+   "fastForward": {
+    "type": "boolean",
+    "description": "Skip every configuration dialog and auto-roll. Default true."
+   },
+   "advantage": {
+    "type": "boolean"
+   },
+   "disadvantage": {
+    "type": "boolean"
+   },
+   "attackBonus": {
+    "type": [
+     "number",
+     "string"
+    ],
+    "description": "One-off bonus to this attack roll (`2`, `\"1d4\"`)."
+   },
+   "damageBonus": {
+    "type": "string",
+    "description": "One-off bonus to the first damage part (`\"1d6\"` for Sneak Attack)."
+   },
+   "targetAcBonus": {
+    "type": "number",
+    "description": "Added to every target's AC for this hit check (Midi-QOL only)."
+   }
+  },
+  "required": [
+   "actorId",
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "get-journals": {
+  "type": "object",
+  "properties": {
+   "light": {
+    "type": "boolean",
+    "description": "Index only: pages carry id/name/type/src but no text, markdown or enriched HTML, and TextEditor.enrichHTML is skipped entirely — the part that makes a full get-journals take tens of seconds on large worlds. Used by the gateway for journal lists and search (module 8.12+)."
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-journal": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "journalId"
+  ],
+  "additionalProperties": false
+ },
+ "get-items": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-item": {
+  "type": "object",
+  "properties": {
+   "itemId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "itemId"
+  ],
+  "additionalProperties": false
+ },
+ "get-compendiums": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-compendium": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "types": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "ids": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  },
+  "required": [
+   "packId"
+  ],
+  "additionalProperties": false
+ },
+ "get-compendium-index": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "fields": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  },
+  "required": [
+   "packId"
+  ],
+  "additionalProperties": false
+ },
+ "search-compendium": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "query": {
+    "type": "string"
+   },
+   "filters": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "field": {
+       "type": "string"
+      },
+      "operator": {
+       "type": "string",
+       "enum": [
+        "EQUALS",
+        "CONTAINS",
+        "STARTS_WITH",
+        "ENDS_WITH",
+        "LESS_THAN",
+        "LESS_THAN_EQUAL",
+        "GREATER_THAN",
+        "GREATER_THAN_EQUAL",
+        "BETWEEN",
+        "IS_EMPTY"
+       ]
+      },
+      "value": {},
+      "negate": {
+       "type": "boolean"
+      }
+     },
+     "required": [
+      "field"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "exclude": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "fields": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "limit": {
+    "type": "number"
+   },
+   "offset": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "packId"
+  ],
+  "additionalProperties": false
+ },
+ "search-compendiums": {
+  "type": "object",
+  "properties": {
+   "query": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string"
+   },
+   "system": {
+    "type": "string"
+   },
+   "limit": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "query"
+  ],
+  "additionalProperties": false
+ },
+ "get-compendium-document": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "documentId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "packId",
+   "documentId"
+  ],
+  "additionalProperties": false
+ },
+ "import-from-compendium": {
+  "type": "object",
+  "properties": {
+   "packId": {
+    "type": "string"
+   },
+   "documentId": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "packId",
+   "documentId"
+  ],
+  "additionalProperties": false
+ },
+ "resolve-uuid": {
+  "type": "object",
+  "properties": {
+   "uuid": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "uuid"
+  ],
+  "additionalProperties": false
+ },
+ "search-compendium-pages": {
+  "type": "object",
+  "properties": {
+   "query": {
+    "type": "string"
+   },
+   "packIds": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "pageTypes": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   },
+   "searchContent": {
+    "type": "boolean"
+   },
+   "limit": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "query"
+  ],
+  "additionalProperties": false
+ },
+ "list-roll-tables": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-roll-table": {
+  "type": "object",
+  "properties": {
+   "tableId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "tableId"
+  ],
+  "additionalProperties": false
+ },
+ "roll-on-table": {
+  "type": "object",
+  "properties": {
+   "tableId": {
+    "type": "string"
+   },
+   "displayChat": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "tableId"
+  ],
+  "additionalProperties": false
+ },
+ "reset-table": {
+  "type": "object",
+  "properties": {
+   "tableId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "tableId"
+  ],
+  "additionalProperties": false
+ },
+ "create-roll-table": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "formula": {
+    "type": "string"
+   },
+   "replacement": {
+    "type": "boolean"
+   },
+   "displayRoll": {
+    "type": "boolean"
+   },
+   "description": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   },
+   "results": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "text": {
+       "type": "string"
+      },
+      "range": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "weight": {
+       "type": "number"
+      },
+      "type": {
+       "type": "number"
+      },
+      "documentCollection": {
+       "type": "string"
+      },
+      "documentId": {
+       "type": "string"
+      },
+      "img": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "text",
+      "range"
+     ],
+     "additionalProperties": false
+    }
+   }
+  },
+  "required": [
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "update-roll-table": {
+  "type": "object",
+  "properties": {
+   "tableId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "formula": {
+    "type": "string"
+   },
+   "replacement": {
+    "type": "boolean"
+   },
+   "displayRoll": {
+    "type": "boolean"
+   },
+   "description": {
+    "type": "string"
+   },
+   "img": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "tableId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-roll-table": {
+  "type": "object",
+  "properties": {
+   "tableId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "tableId"
+  ],
+  "additionalProperties": false
+ },
+ "capture-scene": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-combat-turn-context": {
+  "type": "object",
+  "properties": {
+   "combatId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "set-door-state": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "wallId": {
+    "type": "string"
+   },
+   "state": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "wallId",
+   "state"
+  ],
+  "additionalProperties": false
+ },
+ "get-walls": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "create-wall": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "c": {
+    "type": "array",
+    "items": {
+     "type": "number"
+    },
+    "minItems": 4,
+    "maxItems": 4
+   },
+   "door": {
+    "type": "string",
+    "enum": [
+     "none",
+     "door",
+     "secret"
+    ]
+   },
+   "doorState": {
+    "type": "string",
+    "enum": [
+     "closed",
+     "open",
+     "locked"
+    ]
+   },
+   "move": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "sense": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "sound": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "light": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "dir": {
+    "type": "string",
+    "enum": [
+     "both",
+     "left",
+     "right"
+    ]
+   }
+  },
+  "required": [
+   "c"
+  ],
+  "additionalProperties": false
+ },
+ "update-wall": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "wallId": {
+    "type": "string"
+   },
+   "c": {
+    "type": "array",
+    "items": {
+     "type": "number"
+    },
+    "minItems": 4,
+    "maxItems": 4
+   },
+   "door": {
+    "type": "string",
+    "enum": [
+     "none",
+     "door",
+     "secret"
+    ]
+   },
+   "doorState": {
+    "type": "string",
+    "enum": [
+     "closed",
+     "open",
+     "locked"
+    ]
+   },
+   "move": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "sense": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "sound": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "light": {
+    "type": "string",
+    "enum": [
+     "none",
+     "normal",
+     "limited"
+    ]
+   },
+   "dir": {
+    "type": "string",
+    "enum": [
+     "both",
+     "left",
+     "right"
+    ]
+   }
+  },
+  "required": [
+   "wallId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-wall": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "wallId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "wallId"
+  ],
+  "additionalProperties": false
+ },
+ "get-notes": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "create-note": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "x": {
+    "type": "number"
+   },
+   "y": {
+    "type": "number"
+   },
+   "entryId": {
+    "type": "string"
+   },
+   "pageId": {
+    "type": "string"
+   },
+   "text": {
+    "type": "string"
+   },
+   "iconSrc": {
+    "type": "string"
+   },
+   "iconTint": {
+    "type": "string"
+   },
+   "iconSize": {
+    "type": "number"
+   },
+   "fontSize": {
+    "type": "number"
+   },
+   "textAnchor": {
+    "type": "string",
+    "enum": [
+     "center",
+     "bottom",
+     "top",
+     "left",
+     "right"
+    ]
+   },
+   "textColor": {
+    "type": "string"
+   },
+   "global": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "x",
+   "y"
+  ],
+  "additionalProperties": false
+ },
+ "update-note": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "noteId": {
+    "type": "string"
+   },
+   "x": {
+    "type": "number"
+   },
+   "y": {
+    "type": "number"
+   },
+   "entryId": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "pageId": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "text": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "iconSrc": {
+    "type": "string"
+   },
+   "iconTint": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "iconSize": {
+    "type": "number"
+   },
+   "fontSize": {
+    "type": "number"
+   },
+   "textAnchor": {
+    "type": "string",
+    "enum": [
+     "center",
+     "bottom",
+     "top",
+     "left",
+     "right"
+    ]
+   },
+   "textColor": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "global": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "noteId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-note": {
+  "type": "object",
+  "properties": {
+   "sceneId": {
+    "type": "string"
+   },
+   "noteId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "noteId"
+  ],
+  "additionalProperties": false
+ },
+ "get-chat-messages": {
+  "type": "object",
+  "properties": {
+   "limit": {
+    "type": "number"
+   },
+   "since": {
+    "type": "string"
+   },
+   "before": {
+    "type": "string"
+   },
+   "includeRolls": {
+    "type": "boolean"
+   },
+   "authorId": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "ic",
+     "ooc",
+     "emote",
+     "roll"
+    ]
+   },
+   "search": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "delete-chat-message": {
+  "type": "object",
+  "properties": {
+   "messageId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "messageId"
+  ],
+  "additionalProperties": false
+ },
+ "update-chat-message": {
+  "type": "object",
+  "properties": {
+   "messageId": {
+    "type": "string"
+   },
+   "content": {
+    "type": "string"
+   },
+   "flavor": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "messageId"
+  ],
+  "additionalProperties": false
+ },
+ "clear-chat": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "export-chat": {
+  "type": "object",
+  "properties": {
+   "format": {
+    "type": "string",
+    "enum": [
+     "text",
+     "json"
+    ]
+   }
+  },
+  "additionalProperties": false
+ },
+ "show-journal": {
+  "type": "object",
+  "properties": {
+   "journalId": {
+    "type": "string"
+   },
+   "pageId": {
+    "type": "string"
+   },
+   "force": {
+    "type": "boolean"
+   },
+   "users": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  },
+  "required": [
+   "journalId"
+  ],
+  "additionalProperties": false
+ },
+ "get-folders": {
+  "type": "object",
+  "properties": {
+   "type": {
+    "type": "string",
+    "enum": [
+     "Actor",
+     "Item",
+     "Scene",
+     "JournalEntry",
+     "RollTable",
+     "Macro",
+     "Cards",
+     "Playlist",
+     "Compendium"
+    ]
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-folder": {
+  "type": "object",
+  "properties": {
+   "folderId": {
+    "type": "string"
+   },
+   "includeSubfolders": {
+    "type": "boolean"
+   },
+   "includeContents": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "folderId"
+  ],
+  "additionalProperties": false
+ },
+ "create-folder": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "Actor",
+     "Item",
+     "Scene",
+     "JournalEntry",
+     "RollTable",
+     "Macro",
+     "Cards",
+     "Playlist",
+     "Compendium"
+    ]
+   },
+   "parentId": {
+    "type": "string"
+   },
+   "color": {
+    "type": "string"
+   },
+   "description": {
+    "type": "string"
+   },
+   "sort": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "name",
+   "type"
+  ],
+  "additionalProperties": false
+ },
+ "update-folder": {
+  "type": "object",
+  "properties": {
+   "folderId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "parentId": {
+    "type": [
+     "string",
+     "null"
+    ]
+   },
+   "color": {
+    "type": "string"
+   },
+   "description": {
+    "type": "string"
+   },
+   "sort": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "folderId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-folder": {
+  "type": "object",
+  "properties": {
+   "folderId": {
+    "type": "string"
+   },
+   "deleteSubfolders": {
+    "type": "boolean"
+   },
+   "deleteContents": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "folderId"
+  ],
+  "additionalProperties": false
+ },
+ "get-macros": {
+  "type": "object",
+  "properties": {
+   "type": {
+    "type": "string",
+    "enum": [
+     "chat",
+     "script"
+    ]
+   }
+  },
+  "additionalProperties": false
+ },
+ "get-macro": {
+  "type": "object",
+  "properties": {
+   "macroId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "macroId"
+  ],
+  "additionalProperties": false
+ },
+ "create-macro": {
+  "type": "object",
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "chat",
+     "script"
+    ]
+   },
+   "command": {
+    "type": "string"
+   },
+   "scope": {
+    "type": "string",
+    "enum": [
+     "global",
+     "actors",
+     "actor"
+    ]
+   },
+   "img": {
+    "type": "string"
+   },
+   "folder": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "name",
+   "type",
+   "command"
+  ],
+  "additionalProperties": false
+ },
+ "update-macro": {
+  "type": "object",
+  "properties": {
+   "macroId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "chat",
+     "script"
+    ]
+   },
+   "command": {
+    "type": "string"
+   },
+   "scope": {
+    "type": "string",
+    "enum": [
+     "global",
+     "actors",
+     "actor"
+    ]
+   },
+   "img": {
+    "type": "string"
+   },
+   "folder": {
+    "type": [
+     "string",
+     "null"
+    ]
+   }
+  },
+  "required": [
+   "macroId"
+  ],
+  "additionalProperties": false
+ },
+ "delete-macro": {
+  "type": "object",
+  "properties": {
+   "macroId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "macroId"
+  ],
+  "additionalProperties": false
+ },
+ "execute-macro": {
+  "type": "object",
+  "properties": {
+   "macroId": {
+    "type": "string"
+   },
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "macroId"
+  ],
+  "additionalProperties": false
+ },
+ "get-playlists": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-playlist": {
+  "type": "object",
+  "properties": {
+   "playlistId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "playlistId"
+  ],
+  "additionalProperties": false
+ },
+ "play-playlist": {
+  "type": "object",
+  "properties": {
+   "playlistId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "playlistId"
+  ],
+  "additionalProperties": false
+ },
+ "stop-playlist": {
+  "type": "object",
+  "properties": {
+   "playlistId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "playlistId"
+  ],
+  "additionalProperties": false
+ },
+ "play-sound-in-playlist": {
+  "type": "object",
+  "properties": {
+   "playlistId": {
+    "type": "string"
+   },
+   "soundId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "playlistId",
+   "soundId"
+  ],
+  "additionalProperties": false
+ },
+ "stop-sound-in-playlist": {
+  "type": "object",
+  "properties": {
+   "playlistId": {
+    "type": "string"
+   },
+   "soundId": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "playlistId",
+   "soundId"
+  ],
+  "additionalProperties": false
+ },
+ "play-sound-once": {
+  "type": "object",
+  "properties": {
+   "src": {
+    "type": "string"
+   },
+   "volume": {
+    "type": "number"
+   },
+   "loop": {
+    "type": "boolean"
+   },
+   "broadcast": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "src"
+  ],
+  "additionalProperties": false
+ },
+ "add-sound-to-playlist": {
+  "type": "object",
+  "properties": {
+   "playlistId": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "path": {
+    "type": "string"
+   },
+   "volume": {
+    "type": "number"
+   },
+   "repeat": {
+    "type": "boolean"
+   },
+   "description": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "playlistId",
+   "name",
+   "path"
+  ],
+  "additionalProperties": false
+ },
+ "get-world-time": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "advance-time": {
+  "type": "object",
+  "properties": {
+   "seconds": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "seconds"
+  ],
+  "additionalProperties": false
+ },
+ "set-world-time": {
+  "type": "object",
+  "properties": {
+   "worldTime": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "worldTime"
+  ],
+  "additionalProperties": false
+ },
+ "pause-game": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "resume-game": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "get-pause-state": {
+  "type": "object",
+  "additionalProperties": {
+   "not": {}
+  },
+  "properties": {}
+ },
+ "notify": {
+  "type": "object",
+  "properties": {
+   "message": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string",
+    "enum": [
+     "info",
+     "warn",
+     "error",
+     "success"
+    ]
+   },
+   "permanent": {
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "message"
+  ],
+  "additionalProperties": false
+ },
+ "pan-canvas": {
+  "type": "object",
+  "properties": {
+   "x": {
+    "type": "number"
+   },
+   "y": {
+    "type": "number"
+   },
+   "scale": {
+    "type": "number"
+   },
+   "duration": {
+    "type": "number"
+   }
+  },
+  "additionalProperties": false
+ },
+ "ping-location": {
+  "type": "object",
+  "properties": {
+   "x": {
+    "type": "number"
+   },
+   "y": {
+    "type": "number"
+   },
+   "style": {
+    "type": "string",
+    "enum": [
+     "pulse",
+     "arrow",
+     "alert",
+     "chevron"
+    ]
+   },
+   "color": {
+    "type": "string"
+   },
+   "duration": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "x",
+   "y"
+  ],
+  "additionalProperties": false
+ }
+}

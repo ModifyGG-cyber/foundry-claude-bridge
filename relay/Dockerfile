@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json tsconfig.json ./
 RUN npm ci
 COPY src ./src
+COPY scripts ./scripts
 RUN npm run build && npm prune --omit=dev
 
 FROM node:22-alpine
@@ -15,4 +16,4 @@ RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data
 EXPOSE 8787
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/index.js", "--http"]

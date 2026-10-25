@@ -1,4 +1,5 @@
-// End-to-end: real relay process, fake Foundry module over WebSocket, real MCP client, real OAuth flow.
+// End-to-end tests: the real relay process, a fake Foundry module speaking the
+// module's wire protocol, and the official MCP client over stdio and HTTP.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
@@ -7,168 +8,247 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import WebSocket from 'ws';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { install, chat } from './fake-foundry.mjs';
+import { ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 
-const PORT = 18787;
-const BASE = `http://localhost:${PORT}`;
-const env = {
-  ...process.env,
-  PUBLIC_URL: BASE,
-  PORT: String(PORT),
-  FOUNDRY_SECRET: 'x'.repeat(32),
-  RELAY_PASSWORD: 'correct horse battery',
-  API_KEY: 'k'.repeat(40),
-  DATA_DIR: mkdtempSync(join(tmpdir(), 'relay-')),
-  CALL_TIMEOUT_MS: '3000',
-};
-
-const relay = spawn('node', ['dist/index.js'], { env, stdio: ['ignore', 'pipe', 'inherit'] });
-await new Promise(resolve => relay.stdout.on('data', d => String(d).includes('listening') && resolve()));
+const KEY = `pk_${'a'.repeat(30)}`;
 const results = [];
 const check = async (label, fn) => {
   try { await fn(); results.push(`ok   ${label}`); }
   catch (e) { results.push(`FAIL ${label}: ${e.message}`); process.exitCode = 1; }
 };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const mcp = async token => {
-  const client = new Client({ name: 'e2e', version: '0' });
-  await client.connect(new StreamableHTTPClientTransport(new URL('/mcp', BASE), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
-  return client;
-};
-const call = async (client, name, args = {}) => {
-  const res = await client.callTool({ name, arguments: args });
-  return { error: res.isError, data: res.isError ? res.content[0].text : JSON.parse(res.content[0].text) };
-};
-
-try {
-  await check('unauthenticated /mcp gets 401 with resource metadata', async () => {
-    const res = await fetch(`${BASE}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-    assert.equal(res.status, 401);
-    assert.match(res.headers.get('www-authenticate'), /resource_metadata=/);
-  });
-
-  const client = await mcp(env.API_KEY);
-  await check('tools are listed', async () => {
-    const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(t => t.name).sort(), ['actor-get', 'actor-list', 'chat-send', 'journal-get', 'journal-search', 'world-info']);
-  });
-  await check('calls fail clearly while Foundry is offline', async () => {
-    const r = await call(client, 'world-info');
-    assert.ok(r.error);
-    assert.match(r.data, /not connected/);
-  });
-
-  await check('bad module secret is rejected', async () => {
-    const ws = new WebSocket(`ws://localhost:${PORT}/foundry`);
-    await new Promise(r => ws.on('open', r));
-    ws.send(JSON.stringify({ type: 'hello', secret: 'wrong', world: {} }));
-    const code = await new Promise(r => ws.on('close', c => r(c)));
-    assert.equal(code, 4001);
-  });
-
-  // Fake module: the real handlers.js against fake Foundry globals.
-  install();
-  const { handlers } = await import('../../module/scripts/handlers.js');
-  const ws = new WebSocket(`ws://localhost:${PORT}/foundry`);
-  await new Promise(r => ws.on('open', r));
-  ws.send(JSON.stringify({ type: 'hello', secret: env.FOUNDRY_SECRET, world: { title: 'Nyarlathotep', system: 'CoC7', foundryVersion: '14.369', gm: 'Gamemaster' } }));
+/** A stand-in for the Foundry module: answers commands from a table of handlers. */
+function fakeModule(port, { key = KEY, system = 'dnd5e', handlers = {} } = {}) {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?apiKey=${encodeURIComponent(key)}`);
+  ws.received = [];
   ws.on('message', async raw => {
     const msg = JSON.parse(raw);
-    if (msg.type !== 'call') return;
+    if (msg.type === 'pong') { ws.gotPong = true; return; }
+    ws.received.push(msg);
+    const all = {
+      'get-world-info': () => ({ world: { id: 'w', title: 'Test World', system, systemVersion: '1', foundryVersion: '14.369' }, counts: {}, compendiumMeta: [] }),
+      ...handlers,
+    };
+    const handler = all[msg.type];
+    if (handler === 'silent') return;
     try {
-      ws.send(JSON.stringify({ type: 'result', id: msg.id, ok: true, data: await handlers[msg.tool].run(msg.args) }));
+      if (!handler) throw new Error(`Unknown command type: ${msg.type}`);
+      ws.send(JSON.stringify({ id: msg.id, success: true, data: await handler(msg.params) }));
     } catch (e) {
-      ws.send(JSON.stringify({ type: 'result', id: msg.id, ok: false, error: e.message }));
+      ws.send(JSON.stringify({ id: msg.id, success: false, error: e.message }));
     }
   });
-  await new Promise(r => ws.once('message', r)); // welcome
-
-  await check('health shows the connected world', async () => {
-    const h = await (await fetch(`${BASE}/health`)).json();
-    assert.equal(h.foundry.connected, true);
-    assert.equal(h.foundry.world.system, 'CoC7');
-  });
-  await check('world-info', async () => {
-    const r = await call(client, 'world-info');
-    assert.equal(r.data.system.id, 'CoC7');
-    assert.equal(r.data.counts.actors, 2);
-    assert.equal(r.data.compendiums[0].count, 103);
-  });
-  await check('actor-list filters by type and folder', async () => {
-    assert.equal((await call(client, 'actor-list', { type: 'character' })).data.actors[0].name, 'Harvey Walters');
-    assert.equal((await call(client, 'actor-list', { folder: 'investigators' })).data.total, 1);
-    assert.equal((await call(client, 'actor-list', { name: 'ELIAS' })).data.actors[0].id, 'a1');
-  });
-  await check('actor-get by name, with items', async () => {
-    const r = await call(client, 'actor-get', { name: 'harvey walters', includeItemData: true });
-    assert.equal(r.data.system.characteristics.int.value, 85);
-    assert.equal(r.data.items[0].system.value, 60);
-  });
-  await check('actor-get unknown name is a clean error', async () => {
-    const r = await call(client, 'actor-get', { name: 'Nyarlathotep' });
-    assert.ok(r.error);
-    assert.match(r.data, /No actor found/);
-  });
-  await check('journal-search matches names and page text', async () => {
-    assert.equal((await call(client, 'journal-search', { query: 'ju-ju' })).data.results[0].matched, 'name');
-    const r = await call(client, 'journal-search', { query: 'new york telegram' });
-    assert.equal(r.data.results[0].pageId, 'p1');
-    assert.match(r.data.results[0].snippet, /Telegram from Jackson Elias/);
-  });
-  await check('journal-get returns plain text and pages through long entries', async () => {
-    const r = await call(client, 'journal-get', { id: 'j1' });
-    assert.match(r.data.pages[0].text, /Jackson Elias\.\nCome to New York/);
-    assert.equal(r.data.pages[1].src, 'maps/peru.webp');
-    const first = await call(client, 'journal-get', { name: 'Ju-Ju House', maxChars: 500 });
-    assert.equal(first.data.truncated, true);
-    const second = await call(client, 'journal-get', { name: 'Ju-Ju House', maxChars: 500, offset: first.data.nextOffset });
-    assert.equal(second.data.pages[0].startsAt, 500);
-    assert.equal(first.data.pages[0].text.length + second.data.pages[0].text.length, Math.min(1000, first.data.totalChars));
-  });
-  await check('chat-send as an actor, whispered', async () => {
-    const r = await call(client, 'chat-send', { content: 'Hello', speakerActorName: 'Jackson Elias', whisperToGM: true });
-    assert.equal(r.data.speaker, 'Jackson Elias');
-    assert.deepEqual(chat.at(-1).whisper, ['u1']);
-  });
-
-  await check('OAuth: register, sign in, exchange, refresh', async () => {
-    const reg = await (await fetch(`${BASE}/register`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ client_name: '<Claude>', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'], token_endpoint_auth_method: 'none' }),
-    })).json();
-    const verifier = randomBytes(32).toString('base64url');
-    const challenge = createHash('sha256').update(verifier).digest('base64url');
-    const auth = new URL('/authorize', BASE);
-    Object.entries({ client_id: reg.client_id, redirect_uri: 'https://claude.ai/api/mcp/auth_callback', response_type: 'code', code_challenge: challenge, code_challenge_method: 'S256', state: 'st8' })
-      .forEach(([k, v]) => auth.searchParams.set(k, v));
-    const page = await (await fetch(auth)).text();
-    assert.match(page, /&#60;Claude&#62;/, 'client name is escaped');
-    const request = page.match(/name="request" value="([^"]+)"/)[1];
-    const login = body => fetch(`${BASE}/login`, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body) });
-    assert.equal((await login({ request, password: 'nope', action: 'allow' })).status, 401);
-    const ok = await login({ request, password: env.RELAY_PASSWORD, action: 'allow' });
-    assert.equal(ok.status, 302);
-    const redirect = new URL(ok.headers.get('location'));
-    assert.equal(redirect.searchParams.get('state'), 'st8');
-    const token = async body => (await fetch(`${BASE}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: reg.client_id, ...body }) })).json();
-    const t1 = await token({ grant_type: 'authorization_code', code: redirect.searchParams.get('code'), code_verifier: verifier, redirect_uri: 'https://claude.ai/api/mcp/auth_callback' });
-    assert.ok(t1.access_token && t1.refresh_token, JSON.stringify(t1));
-    const viaOAuth = await mcp(t1.access_token);
-    assert.equal((await call(viaOAuth, 'world-info')).data.world.title, 'Nyarlathotep');
-    const t2 = await token({ grant_type: 'refresh_token', refresh_token: t1.refresh_token });
-    assert.ok(t2.access_token);
-    const reused = await token({ grant_type: 'refresh_token', refresh_token: t1.refresh_token });
-    assert.ok(reused.error, 'old refresh token is rotated out');
-  });
-
-  await check('Foundry disconnect mid-session fails fast', async () => {
-    ws.close();
-    await new Promise(r => setTimeout(r, 100));
-    const r = await call(client, 'world-info');
-    assert.match(r.data, /not connected/);
-  });
-} finally {
-  relay.kill();
-  console.log(results.join('\n'));
+  ws.opened = new Promise((resolve, reject) => { ws.on('open', resolve); ws.on('error', reject); });
+  ws.closed = new Promise(resolve => ws.on('close', code => resolve(code)));
+  return ws;
 }
+
+const text = res => res.content[0].text;
+const json = res => JSON.parse(text(res));
+
+// ── stdio mode (Claude Desktop) ───────────────────────────────────────────
+const STATE_DIR = mkdtempSync(join(tmpdir(), 'relay-state-'));
+{
+  const PORT = 18788;
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: ['dist/index.js'],
+    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: String(PORT), CALL_TIMEOUT_MS: '1500', BRIDGE_STATE_DIR: STATE_DIR },
+    stderr: 'pipe',
+  });
+  const client = new Client({ name: 'e2e', version: '0' });
+  let listChanged = 0;
+  client.setNotificationHandler(ToolListChangedNotificationSchema, () => { listChanged++; });
+  await client.connect(transport);
+  await sleep(300);
+
+  try {
+    await check('stdio: every tool is listed before Foundry connects', async () => {
+      const { tools } = await client.listTools();
+      assert.equal(tools.length, 164);
+      const skill = tools.find(t => t.name === 'dnd5e-roll-skill');
+      assert.deepEqual(skill.inputSchema.required, ['actorId', 'skill']);
+      assert.equal(tools.find(t => t.name === 'clear-chat').annotations.destructiveHint, true);
+      assert.equal(tools.find(t => t.name === 'get-actor').annotations.readOnlyHint, true);
+    });
+
+    await check('stdio: calls fail clearly while Foundry is offline', async () => {
+      const res = await client.callTool({ name: 'get-actors', arguments: {} });
+      assert.ok(res.isError);
+      assert.match(text(res), /not connected/);
+    });
+
+    await check('wrong API key is closed with 4001', async () => {
+      const ws = fakeModule(PORT, { key: `pk_${'b'.repeat(30)}` });
+      assert.equal(await ws.closed, 4001);
+    });
+
+    const calls = [];
+    const mod = fakeModule(PORT, {
+      system: 'CoC7',
+      handlers: {
+        'get-actor': params => { calls.push(params); return { id: params.actorId, name: 'Harvey Walters', system: { san: { value: 55 } } }; },
+        'delete-actor': () => { throw new Error('Actor not found: zzz'); },
+        'capture-scene': () => ({ sceneId: 's', sceneName: 'Arkham', image: 'UklGRg==', mimeType: 'image/webp', width: 10, height: 10 }),
+        'get-pause-state': 'silent',
+      },
+    });
+    await mod.opened;
+    await sleep(300);
+
+    await check('connect learns the system and notifies a tool-list change', async () => {
+      assert.ok(listChanged >= 1);
+      const { tools } = await client.listTools();
+      assert.ok(!tools.some(t => t.name.startsWith('dnd5e-') || t.name.startsWith('pf2e-')), 'no dnd5e/pf2e tools in a CoC7 world');
+      assert.ok(tools.some(t => t.name === 'coc7-roll-check'), 'CoC7 tools in a CoC7 world');
+      assert.ok(tools.some(t => t.name === 'get-actor'));
+    });
+
+    await check('module ping gets a pong', async () => {
+      mod.send(JSON.stringify({ type: 'ping', ts: 1 }));
+      await sleep(100);
+      assert.ok(mod.gotPong);
+    });
+
+    await check('a tool call becomes a wire command and returns its data', async () => {
+      const res = await client.callTool({ name: 'get-actor', arguments: { actorId: 'a2' } });
+      assert.equal(json(res).system.san.value, 55);
+      assert.deepEqual(calls.at(-1), { actorId: 'a2' });
+      assert.equal(mod.received.at(-1).type, 'get-actor');
+    });
+
+    await check('module errors come back as tool errors', async () => {
+      const res = await client.callTool({ name: 'delete-actor', arguments: { actorId: 'zzz' } });
+      assert.ok(res.isError);
+      assert.equal(text(res), 'Actor not found: zzz');
+    });
+
+    await check('screenshots are returned as image content', async () => {
+      const res = await client.callTool({ name: 'capture-scene', arguments: {} });
+      assert.equal(res.content[1].type, 'image');
+      assert.equal(res.content[1].mimeType, 'image/webp');
+      assert.match(json(res).image, /attached as image 1/);
+    });
+
+    await check('an unanswered command times out', async () => {
+      const res = await client.callTool({ name: 'get-pause-state', arguments: {} });
+      assert.ok(res.isError);
+      assert.match(text(res), /did not answer/);
+    });
+
+    await check('a second GM connection replaces the first with 4002', async () => {
+      const second = fakeModule(PORT, { system: 'dnd5e' });
+      await second.opened;
+      assert.equal(await mod.closed, 4002);
+      await sleep(300);
+      const { tools } = await client.listTools();
+      assert.ok(tools.some(t => t.name === 'dnd5e-roll-skill'), 'dnd5e tools appear for a dnd5e world');
+      assert.ok(!tools.some(t => t.name.startsWith('pf2e-') || t.name.startsWith('coc7-')));
+      second.close();
+    });
+  } finally {
+    await client.close();
+  }
+}
+
+// A restarted relay lists tools for the last world's system before Foundry reconnects.
+{
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: ['dist/index.js'],
+    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: '18789', BRIDGE_STATE_DIR: STATE_DIR },
+    stderr: 'pipe',
+  });
+  const client = new Client({ name: 'e2e', version: '0' });
+  await client.connect(transport);
+  try {
+    await check('stdio: after a restart, the last world\'s system decides the tool list', async () => {
+      const { tools } = await client.listTools();
+      assert.ok(tools.some(t => t.name === 'dnd5e-roll-skill'));
+      assert.ok(!tools.some(t => t.name.startsWith('pf2e-') || t.name.startsWith('coc7-')));
+    });
+  } finally {
+    await client.close();
+  }
+}
+
+// ── HTTP mode (claude.ai or a remote relay) ───────────────────────────────
+{
+  const PORT = 18787;
+  const BASE = `http://localhost:${PORT}`;
+  const env = {
+    ...process.env,
+    FOUNDRY_KEY: KEY,
+    PUBLIC_URL: BASE,
+    PORT: String(PORT),
+    RELAY_PASSWORD: 'correct horse battery',
+    API_KEY: 'k'.repeat(40),
+    DATA_DIR: mkdtempSync(join(tmpdir(), 'relay-')),
+    BRIDGE_STATE_DIR: mkdtempSync(join(tmpdir(), 'relay-state-')),
+  };
+  const relay = spawn('node', ['dist/index.js', '--http'], { env, stdio: ['ignore', 'ignore', 'pipe'] });
+  await new Promise(resolve => relay.stderr.on('data', d => String(d).includes('listening') && resolve()));
+  const mcp = async token => {
+    const client = new Client({ name: 'e2e', version: '0' });
+    await client.connect(new StreamableHTTPClientTransport(new URL('/mcp', BASE), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
+    return client;
+  };
+
+  try {
+    await check('http: unauthenticated /mcp gets 401 with resource metadata', async () => {
+      const res = await fetch(`${BASE}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+      assert.equal(res.status, 401);
+      assert.match(res.headers.get('www-authenticate'), /resource_metadata=/);
+    });
+
+    const mod = fakeModule(PORT, { handlers: { 'get-actors': () => [{ id: 'a1', name: 'Goblin', type: 'npc' }] } });
+    await mod.opened;
+    await sleep(200);
+
+    await check('http: API key bearer works and health shows the world', async () => {
+      const client = await mcp(env.API_KEY);
+      const res = await client.callTool({ name: 'get-actors', arguments: {} });
+      assert.equal(json(res)[0].name, 'Goblin');
+      const health = await (await fetch(`${BASE}/health`)).json();
+      assert.equal(health.foundry.world.system, 'dnd5e');
+    });
+
+    await check('http: OAuth register, sign in, exchange, refresh', async () => {
+      const redirectUri = 'https://claude.ai/api/mcp/auth_callback';
+      const reg = await (await fetch(`${BASE}/register`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ client_name: '<Claude>', redirect_uris: [redirectUri], token_endpoint_auth_method: 'none' }),
+      })).json();
+      const verifier = randomBytes(32).toString('base64url');
+      const challenge = createHash('sha256').update(verifier).digest('base64url');
+      const auth = new URL('/authorize', BASE);
+      Object.entries({ client_id: reg.client_id, redirect_uri: redirectUri, response_type: 'code', code_challenge: challenge, code_challenge_method: 'S256', state: 'st8' })
+        .forEach(([k, v]) => auth.searchParams.set(k, v));
+      const page = await (await fetch(auth)).text();
+      assert.match(page, /&#60;Claude&#62;/, 'client name is escaped');
+      const request = page.match(/name="request" value="([^"]+)"/)[1];
+      const login = body => fetch(`${BASE}/login`, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body) });
+      assert.equal((await login({ request, password: 'nope', action: 'allow' })).status, 401);
+      const ok = await login({ request, password: env.RELAY_PASSWORD, action: 'allow' });
+      assert.equal(ok.status, 302);
+      const redirect = new URL(ok.headers.get('location'));
+      assert.equal(redirect.searchParams.get('state'), 'st8');
+      const token = async body => (await fetch(`${BASE}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: reg.client_id, ...body }) })).json();
+      const t1 = await token({ grant_type: 'authorization_code', code: redirect.searchParams.get('code'), code_verifier: verifier, redirect_uri: redirectUri });
+      assert.ok(t1.access_token && t1.refresh_token, JSON.stringify(t1));
+      const viaOAuth = await mcp(t1.access_token);
+      assert.equal(json(await viaOAuth.callTool({ name: 'get-actors', arguments: {} }))[0].id, 'a1');
+      const t2 = await token({ grant_type: 'refresh_token', refresh_token: t1.refresh_token });
+      assert.ok(t2.access_token);
+      assert.ok((await token({ grant_type: 'refresh_token', refresh_token: t1.refresh_token })).error, 'old refresh token is rotated out');
+    });
+    mod.close();
+  } finally {
+    relay.kill();
+  }
+}
+
+console.log(results.join('\n'));

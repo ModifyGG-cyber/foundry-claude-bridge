@@ -1,0 +1,947 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [8.15.0] - 2026-10-24
+
+### Fixed
+
+- **A wrong API key no longer looks like a flaky connection.** When the key in Module Settings is not the one foundry-mcp.com issued, the gateway accepts the WebSocket upgrade and only then closes it with code `4001` (`Missing API key` / `Invalid API key`). The module saw a connect, a disconnect and a reconnect every five seconds, forever, with nothing but "Connected" / "Disconnected" toasts to show for it. On `4001` it now stops reconnecting and shows one red notification that stays until dismissed: *The server rejected the API key. Open Module Settings, paste the key again (use the Copy button on foundry-mcp.com) and reload the world.* The "network is back" / "tab is visible" shortcut does not retry either; reloading the world, which re-reads the settings, does.
+- **Two GM clients with one key no longer knock each other out every six seconds.** The server keeps one connection per key and closes the older one when a new client arrives. The closed client reconnected after five seconds and took the key back, the other did the same, and so on for the whole session (one world logged 2859 such swaps in three days). The server now closes the displaced connection with code `4002` (`replaced by a newer connection with the same API key`); on that code the module waits two minutes (plus the usual jitter) before reconnecting, does not count the wait as a backoff attempt, ignores the "network is back" / "tab is visible" shortcut meanwhile, and shows a yellow notification: *Another Foundry client is connected with this API key (another browser, device or your host's own GM session). This one retries in 2 minutes.* Against a server that still closes without a code the behaviour is unchanged.
+- **Keys damaged by the paste are repaired or refused before the first connection.** All whitespace and invisible characters (line breaks, tabs, non-breaking and zero-width spaces, BOM) are removed from the whole key on load, not only from its ends; a key that changed is written back to the settings (client scope, no reload) and the console says `API key cleaned up: removed whitespace`. A key that is still not a key — no `pk_` prefix (an OAuth token pasted by mistake), characters outside `A-Za-z0-9_-+/=`, fewer than 20 or more than 64 characters — is refused with a permanent red notification (*The API key in Module Settings is not a Foundry MCP key (expected pk_… from foundry-mcp.com). Fix it in Module Settings and reload.*) and the module does not connect. The same check runs when the key is saved in Module Settings, so the notification appears before the reload. The length is a range rather than the 35 characters the current generator produces, on purpose; a key with a stray `Copy` at the end passes the format check and is caught by `4001`.
+
+### Changed
+
+- **Close codes from the server now mean something to the module.** `4001`: the key was rejected, stop and tell the GM. `4002`: another client took the key, wait two minutes. Every other code (`1000`, `1005`, `1006`, …) keeps the exponential backoff (5 s doubling to a 60 s ceiling, up to 1 s jitter). The generic "Disconnected from server" toast is skipped for `4001` and `4002`, since the dedicated notification already explains the close, and the console line for a close carries the code and reason (`WebSocket disconnected (code 4001: Invalid API key)`).
+
+### Technical
+
+- `src/settings/apiKeyFormat.ts`: `normalizeApiKey` / `validateApiKey` (`empty` / `prefix` / `charset` / `length`); `setApiKey`, `reportInvalidApiKey` and an `onChange` on the `apiKey` setting in `SettingsManager`
+- `WebSocketClient`: `onClose(code, reason)` hook (fires before `onDisconnect`), exported `CLOSE_CODE_API_KEY_REJECTED` / `CLOSE_CODE_REPLACED`, `haltedByServer` and `waitingAfterReplacement` guards on `reconnectNow()`, `REPLACED_RETRY_DELAY_MS` outside the backoff
+- 2994 tests passing (282 suites): key normalization and every rejection reason, the settings `onChange` notification, `4001` halt / `reconnectNow` no-op / explicit reconnect, `4002` delay, jitter, attempt counter, `reconnectNow` suppression and manual cancel, backoff regression for `1000` / `1005` / `1006`
+
+## [8.14.0] - 2026-10-08
+
+### Added
+
+- **`dnd5e/activate-item` takes the choices the dialogs used to ask for.** `attackMode` (`oneHanded`, `twoHanded`, `offhand`, `thrown`, …), `ammunition` (item id, or `false` to shoot without consuming), `consume: { spellSlot?, itemUses?, ammunition? }`, `attackerTokenId` (act as one specific token of the actor: its synthetic actor for an unlinked token, controlled first so Midi-QOL and the chat speaker pick it instead of "Attacker not detected"), and one-off modifiers for this use alone — `advantage` / `disadvantage` (vanilla: `config.advantage` of the attack roll; Midi-QOL: `workflowOptions.advantage/disadvantage`, the source its tracker honours), `attackBonus` (`2`, `"1d4"`), `damageBonus` (`"1d6"` for Sneak Attack, added to the first damage part) and `targetAcBonus` (Midi-QOL `targetACModifiers` for this hit check) — none of them creates an effect document, so unlinked copies of the actor are untouched. The values reach dnd5e through one-shot `dnd5e.preRollAttackV2` / `preRollDamageV2` hooks scoped to the activation, and Midi-QOL through `usage.midiOptions` (verified against dnd5e 5.3.3 and midi-qol 14.0.13).
+- **`dnd5e/activate-item` answers in seconds when a dialog opens.** `fastForward` (default `true`) skips the usage, attack and damage dialogs and the Midi-QOL target confirmation, and auto-rolls attack and damage. If a dnd5e or Midi-QOL dialog still renders (a weapon with several attack modes, a required ammunition confirmation, a consumption choice), the module watches the render hooks and answers at once with `status: "awaiting_user_dialog"` and `dialog: "attack-roll" | "consume" | "damage" | "other"`; the use finishes on its own once the GM clicks. `status` is otherwise `completed`, `workflow_timeout` (Midi-QOL did not report completion within 25 s, below the platform's 30 s gate) or `workflow_aborted` (Midi-QOL deleted the usage card).
+- **`dnd5e/activate-item` reports what landed.** `appliedDamage` / `appliedHealing` (per token id: `applied`, `hpBefore`, `hpAfter`, `tempBefore`, `tempAfter`) come from Midi-QOL's `damageList`, checked against the actor's HP at `RollComplete` so "HP Not Updated" shows as `applied: false`. Without Midi-QOL the module waits for dnd5e's own attack or damage roll (5 s), returns it in `rolls`, and for heal activities applies the healing itself — to the actor for `self` targets, to the current targets otherwise — since vanilla dnd5e only offers a card button. A card posted without a roll answers `warning: "no_roll_performed"` instead of looking like a success.
+- **`dnd5e/use-item` on a self-targeted heal (Second Wind) heals.** It runs through the activation pipeline: the healing is rolled and applied (or applied by Midi-QOL), the result carries `status`, `appliedHealing` and `warning: "no_roll_performed"` when nothing was rolled; `uses` are no longer spent for nothing.
+- **`dnd5e/apply-damage` and `dnd5e/apply-healing`** (bare aliases `apply-damage`, `apply-healing`): `{ actorId | tokenId, sceneId?, amount, type? }` through `Actor5e#applyDamage`, so temp HP absorbs first and resistances, immunities and vulnerabilities apply when a damage type is given. Answer `{ actorId, tokenId?, hpBefore, hpAfter, tempBefore, tempAfter, maxHp }`.
+- **One token out of five.** `update-actor`, `get-actor-effects`, `add-actor-effect`, `update-actor-effect`, `remove-actor-effect` and `toggle-actor-status` accept `tokenId` (plus optional `sceneId`) instead of `actorId` and act on that token's actor — the synthetic actor of an unlinked token — so damage and conditions land on one goblin. `update-actor` echoes `tokenId`.
+- **`actorLink` on tokens.** `get-scene-tokens`, `get-token`, `get-token-by-actor` and the token results of `create-token`, `update-token` and `move-token` carry `actorLink`; `create-token` and `update-token` accept it. A player character placed as an unlinked copy is flagged `warning: "unlinked_character_token"` in `get-scene-tokens`, the case where Midi-QOL hit the token while the assistant edited the actor.
+- **d20 rolls report the applied mode.** `dnd5e/roll-attack`, `roll-skill`, `roll-save`, `roll-ability`, `roll-perception` and the rolls inside `activate-item` carry `mode` (`advantage` / `normal` / `disadvantage`, from dnd5e's `advantageMode`) and `kept` (the d20 result that stayed after `kh`/`kl`), so a request for advantage can be checked against what the system did.
+
+### Fixed
+
+- **`dnd5e/roll-attack` with `advantage` / `disadvantage` under Midi-QOL.** Midi-QOL rebuilds `config.advantage` from its own tracker before calling dnd5e, so the plain flag was ignored and one roll came back as `[6, 3]` keeping the lower with `advantage: true`. With Midi-QOL active the flags are now also passed as `midiOptions.advantage/disadvantage` and `midiOptions.workflowOptions.advantage/disadvantage`, which `Workflow#checkAttackAdvantage` feeds into the tracker. Without Midi-QOL the call is unchanged.
+- **`dnd5e/activate-item` no longer hangs on the last consumable.** dnd5e deletes an auto-destroy item (Potion of Healing, quantity 1) inside `use()`, before its healing roll and before Midi-QOL's workflow has read it, which aborted the workflow with a "Refund resource" card. A one-shot `dnd5e.activityConsumption` hook now keeps the item at quantity 0 through the rolls and the module deletes it once the workflow (or the vanilla roll) is over.
+- **Midi-QOL workflows that never complete no longer eat the whole command.** The capture times out at 25 s instead of 30 s and reports `workflow_timeout`; a workflow Midi-QOL aborts (it deletes the usage card) reports `workflow_aborted` immediately.
+
+### Technical
+
+- `src/systems/dnd5e/item-actions`: `DialogWatchPort` + `Dnd5eActivationDialogGateway` (render hooks, class-chain classification), `ActivationRollHooks` (scoped `dnd5e.preRollAttackV2` / `preRollDamageV2` / `rollAttackV2` / `rollDamageV2` / `activityConsumption` / `midi-qol.preCheckHits`), `MidiCaptureResult` (`completed` / `timeout` / `aborted`, `trackCard`), service races use, dialog and capture; new slice `src/systems/dnd5e/hit-points`; shared `resolveActorTarget` for `tokenId` addressing; `RollOutcome.mode/kept` with `rollModeOf` / `keptD20Of` in the shared kernel
+- `next-turn` round reports were checked against Foundry core's `Combat#nextTurn`: the round only advances through `nextRound()` when no undefeated combatant is left in the order, and the module returns `combat.round` after the update resolves — nothing to change; a round that looks one ahead comes from `skipDefeated` wrapping the order
+- 2960 tests passing (281 suites): dialog classification and watch, roll hooks (config injection, consumption deferral, AC modifiers, waiters), Midi capture results and damage-list mapping, activation service races and deferred cleanup, handler-level vanilla / Midi / dialog / self-heal flows, hit-points gateway and handlers, resolver, token `actorLink`, effect and actor `tokenId` addressing, Midi flags and `mode` / `kept` on `roll-attack`
+
+## [8.13.0] - 2026-10-08
+
+### Fixed
+
+- **`advantage` / `disadvantage` were silently dropped by `dnd5e/roll-skill`, `dnd5e/roll-save`, `dnd5e/roll-ability` and `dnd5e/roll-perception` (and their bare aliases).** The gateway validated and forwarded the flags and the MCP tools promised them, but the module's request schemas did not know the fields, so a check asked for with disadvantage went out as a plain `1d20 + N`. The four commands now accept `advantage?: boolean` and `disadvantage?: boolean` and pass them as top-level flags of the dnd5e process config (`actor.rollSkill({ skill, disadvantage: true }, { configure: false }, …)`) — the same mechanism `dnd5e/roll-attack` already uses; dnd5e's `D20Roll.applyKeybindings` turns them into `advantageMode`, so the result comes back as `2d20kh + N` / `2d20kl + N` with both d20 results in `dice[0].results` (verified against dnd5e 5.3.3). Both flags at once are rejected before rolling with `Cannot have both advantage and disadvantage`, matching the gateway's own check. A flag is only written to the config when `true`; requests without flags produce exactly the previous call.
+
+### Technical
+
+- `RollOptions` and the four `Roll*Command`s carry `advantage` + `disadvantage`; the request schemas share `validation/advantageFlags.ts` (a `.refine` on the pair); `D20RollFlags`, `SkillRollConfig` and `AbilityRollConfig` in `foundryRollTypes.ts`; wire types `Roll{Skill,Save,Ability,Perception}Params` extended
+- 2918 tests passing (274 suites): flag propagation per command and per gateway method with the exact config shape (`toStrictEqual`), both-flags rejection without a roll, schema and mapper defaults; new `RollPerceptionHandler` and `RollRequestSchemas` suites
+- Docs: README restructured (quick start, client table with OAuth first, code mode, tiers, catalog listings); the full command list moved to `docs/COMMANDS.md`; wiki Home rewritten and `WebSocket API` completed to all 164 commands
+
+## [8.12.1] - 2026-09-13
+
+### Security
+
+- **The API key is no longer readable by players.** It was a world-scoped setting, and every user of the world could read it from the browser console (`game.settings.get('foundry-api-bridge','apiKey')`). It is now a client-scoped setting stored in the GM's browser. On the first start after the update the module copies a key still stored in the world settings into this browser and deletes the world copy; other browsers the GM uses need the key entered once more. Players no longer see the field at all.
+
+### Fixed
+
+- **Reconnect no longer gives up, and never waits 42 minutes.** The delay still doubles from the configured base, but is now capped at 60 seconds with up to one second of jitter, and by default the module keeps trying for as long as the world is open (**Max Reconnect Attempts** `0`; a stored value of 10 with the default 5 s base — the old default — is read as unlimited, any other value is kept).
+- **Dead connections are detected.** Browsers answer WebSocket protocol pings on their own and never expose them, so a socket that died behind a NAT or during laptop sleep looked connected until the OS gave up on it — meanwhile the AI got "Foundry not connected". The module now sends an application-level `{"type":"ping"}` every 25 s (first one a second after connecting); once a server has answered, an unanswered ping (10 s) closes the socket and reconnects. Servers that predate the heartbeat never answer, so the check stays off against them. The module also pings and skips any pending backoff when the browser reports the network is back or the tab becomes visible again.
+- **Console version was stuck at 8.2.0.** The `Foundry API Bridge | v…` lines printed a hardcoded constant; the version is now injected from `package.json` at build time.
+
+### Changed
+
+- **`roll-dice` refuses formulas that would freeze the GM's browser.** Foundry evaluates every die synchronously; the handler now rejects formulas longer than 200 characters or rolling more than 1000 dice (`Roll formula asks for too many dice (N > 1000)`), before evaluation.
+- **`search-compendiums` caps `limit` at 500 and `search-compendium-pages` at 200.** Both scan every pack in the world until the limit is met, so an unbounded limit was a full scan on the main thread. Values above the cap are clamped, matching `search-compendium`'s existing 500 cap.
+
+### Technical
+
+- Transport: `WebSocketClient` gains `maxReconnectDelay`, `heartbeatInterval`, `heartbeatTimeout`, `reconnectNow()`, `pingNow()`; pong frames never reach the command router; 47 transport tests (14 new)
+- `migrateLegacyApiKey()` in `SettingsManager` (6 tests); `normalizeLegacyDefaults()` in `ConfigManager` (2 tests); roll-dice size guards (5 tests); page-search cap tests — 2873 tests passing (272 suites)
+- CI workflow now runs on `master` (it listened to `main`, which this repository does not use, so it had never run)
+
+## [8.12.0] - 2026-09-13
+
+### Added
+
+- **`get-journals` light index (`params.light: true`).** Returns every journal with its pages' `id`, `name`, `type` and `src` but no `text`, `markdown` or `enrichedText`, and skips `TextEditor.enrichHTML` entirely. On large worlds the full payload — every page enriched (UUID links resolved, secrets revealed) — took tens of seconds and hit the server's 30 s timeout for journal search and listing; the index takes a fraction of that. The gateway (foundry-mcp) sends `light: true` for journal lists, folder counts and search; single-journal reads (`get-journal`) are unchanged. Backward compatible in both directions: older modules ignore the flag and return the full payload, and callers that omit it get the full payload as before.
+
+### Technical
+
+- `GetJournalsParams` gains `light?: boolean`; `mapJournalToData(journal, { light })` shared with the full path; 3 new handler tests (index shape, no enrichment calls, `light: false` equals omitted)
+
+## [8.11.2] - 2026-08-25
+
+### Fixed
+
+- **Intermittent `Cannot read properties of undefined (reading 'id')` on update and create commands.** Foundry's `Document#update()` resolves to `undefined` when the submitted values are identical to the current ones (a frequent case with an AI DM: "set HP to 20" when HP is already 20), and `Document.create()` resolves to `undefined` when a third-party module vetoes the creation from a `preCreate*` hook — handlers read result fields directly from these return values and crashed. All 16 update handlers (actor, item, journal, journal page, note, token ×2 in move, wall, scene, folder, macro, roll table, effect, combatant ×3) now discard the `update()` return value and read the result from the source document, which Foundry mutates in place — correct on both real updates and no-ops. All 11 create handlers (actor, item, journal, chat message, combat, roll table, folder, macro, scene) now guard the `create()` result and reject with a clear `<Type> creation was cancelled by Foundry (a module hook may have vetoed it)` error instead of crashing. The compendium import path (`create-actor-from-compendium`, `create-item-from-compendium`) gets the same guard through the `WorldImporter` port: a vetoed create now surfaces as `Failed to import document: <id>`. This also root-causes the long-standing pf2e `create-roll-table` crash of the same signature.
+
+### Technical
+
+- 2838 tests passing (272 suites): a no-op-update case per update handler (update resolves `undefined` without mutating — handler returns current document state) and a hook-veto case per create handler (create resolves `undefined` — handler rejects with the explicit message); update mocks now mutate the document in place and resolve `undefined`, matching real Foundry semantics
+
+## [8.11.1] - 2026-07-15
+
+### Fixed
+
+- **Filter mappers crashed on explicit `null` fields in raw compendium data (dnd5e SRD packs).** `dnd5e/filter-compendium-actors` failed every request against `dnd5e.monsters` / `dnd5e.actors24` with `Cannot use 'in' operator to search for 'value' in null` — raw compendium source data (document source without the system's data preparation) keeps unset fields as explicit `null` (e.g. `system.details.cr: null` on SRD NPCs), and the mappers guarded only against `undefined`, so one such document threw in `FoundryActorMapper.extractCr` and killed the whole query regardless of the filter set. All null-unsafe extraction sites of the same pattern are fixed — actor mapper: `cr`, `details.type`, `hp`, `abilities`; item mapper: `attunement`, `activities` (latent, never triggered) — and the Foundry-facing types now declare `null` so the compiler catches this class of bug. A document with an explicit-null field behaves exactly like one lacking the field: silently excluded by filters on that field, still matched by the rest. The pf2e compendium-search mappers were audited and are already null-safe (tolerant path readers). Wire protocol unchanged; no server update required.
+
+### Technical
+
+- 2811 tests passing (272 suites): explicit-null fixtures for both mappers plus a contract test locking that a `cr: null` snapshot is excluded by a cr filter and still passes a name filter
+
+## [8.11.0] - 2026-07-15
+
+### Added
+
+- **`search-compendium-pages` — full-text search inside journal compendium packs.** Rules text and spell lists live in JournalEntry *pages* (dnd5e page subtypes `rule`/`spells`/`class`/`subclass`), which the index-based `search-compendiums` cannot see. The new command scans journal packs lazily (stops loading further packs once the limit is hit), matches the query against page names and — unless `searchContent: false` — page HTML content (tags stripped, basic entities decoded), and returns addressed matches: `{ packId, packLabel, journalId, journalName, pageId, pageName, pageType, uuid, matchedIn: 'name'|'content', snippet }` where `uuid` is the page's embedded-document UUID (feed it to `resolve-uuid`) and `snippet` is ±100 chars of plain-text context around the first content match. Optional `packIds` (loud errors on unknown/non-journal packs), `pageTypes` filter, `limit` (default 25). A blank query returns `[]`.
+- **`resolve-uuid` — resolve any absolute Foundry UUID to its document.** World documents (`Actor.x`), compendium documents (`Compendium.scope.pack.Item.x`), and embedded documents (`Actor.x.Item.y`) all resolve through core `fromUuid`. Returns `{ uuid, documentName, id, name, type, img, pack, parentUuid, data }` with `data = toObject()`. An unresolvable or malformed UUID yields `Document not found for UUID: <uuid>`. This makes reference graphs (class → ItemGrant advancement → features → effects, spell lists → spells) walkable in one call per hop.
+- **`get-compendium` server-side selection via optional `types` / `ids` params.** `types: ['spell']` / `ids: [...]` translate to Foundry `type__in` / `_id__in` database queries on v13+ cores (verified against installed v13/v14), so selecting a few documents no longer loads the whole pack; on v11/v12 the module transparently falls back to a full load with client-side filtering — the wire result is identical. Batch-fetching a grant list is now one `get-compendium` call with `ids` instead of N `get-compendium-document` calls. Omitting both params keeps the exact previous behavior. Empty arrays intentionally match nothing (mirrors `__in` semantics); `documentCount` reflects the returned (filtered) set.
+- **`pf2e/filter-compendium-actors` and `pf2e/filter-compendium-items` — Pathfinder 2e compendium search.** A pf2e-native filter surface built as a full system slice (`src/systems/pf2e/compendium-search/`, zero code shared with the dnd5e engine): actors (bestiaries) filter by `type`, `level` (negative creature levels supported), `traits` (ALL-of semantics), `rarity`, `size`, `maxHp`, `ac`; items filter by `type` (all 25 pf2e subtypes), `level`, `traits`, `rarity`, `category` (feat category, with legacy `featType` fallback), `traditions` (ANY-of, spells), `priceGold` (partial-coins `{pp,gp,sp,cp}` normalized to gold). Same `packIds` semantics as the dnd5e pair; result entries additionally carry `level` — the primary content-selection axis in pf2e — and sort by level → name → id. Data paths verified against installed pf2e 7.12.2 and shipped pack data; guarded by `requireSystem('pf2e', …)`.
+- **`dnd5e/filter-compendium-actors` and `dnd5e/filter-compendium-items` — specification-based search over compendium packs.** The same filter surface as `filter-actors`/`filter-items` (name, type, creatureType, size, disposition, cr, level, maxHp, ac, abilities; item side: rarity, spellSchool, attunement, identified, activities, container, weight, price, spellLevel), applied to pack contents instead of world collections. Optional `packIds` targets specific packs (unknown pack → `Pack not found: X`, wrong-type pack → `Compendium pack is not an <Actor|Item> pack: X`); omitted `packIds` auto-discovers every Actor/Item pack of the world. Results carry `packId` and `uuid` per entry so a match can be fetched (`get-compendium-document`) or imported directly. World-only filters (`folder`, `hasPlayerOwner`, `currentHp`) are intentionally absent from the compendium variants. Commands are system-namespaced and guarded by `requireSystem('dnd5e', …)` — in a non-dnd5e world they return `Operation '…' is not supported by game system '…'`.
+
+### Fixed
+
+- **`search-compendium` field filters silently degraded to strict equality.** The handler passed wire operator names (`'GREATER_THAN'`, `'CONTAINS'`, …) straight into Foundry's `pack.search()`, but `SearchFilter.evaluateFilter` matches on the lowercase operator *values* (`'gt'`, `'contains'`, …) and treats anything unknown as `===`. Nine of ten operators were affected — e.g. `GREATER_THAN: 5` matched only documents *equal* to 5. Wire operators are now translated to the Foundry values (verified against installed v13 and v14 cores) in a dedicated `operatorMapping` module. The wire protocol is unchanged — clients keep sending the same uppercase operator names; only the (previously wrong) filter results change.
+
+### Changed
+
+- **Compendium subsystem reorganized into a DDD bounded context (`src/compendiums/`).** All 10 compendium commands (`get-compendiums`, `get-compendium`, `get-compendium-index`, `search-compendium`, `search-compendiums`, `get-compendium-document`, `import-from-compendium`, `create-actor-from-compendium`, `create-item-from-compendium`, `add-item-from-compendium`) now flow through domain → application → infrastructure → validation layers; the handlers are thin factory-built adapters (injectable `gameProvider`, Zod-validated params, legacy error-text translation at the edge). **The wire protocol is byte-for-byte unchanged** — command names, params, results, limits (50/500 and 100), and error texts (including the historical `Compendium not found:` / `Pack not found:` / `Compendium pack not found:` variants) are preserved and locked by the pre-existing handler contract tests, which pass unmodified (except the three operator assertions covered by the fix above).
+- **Shared kernel promoted to `src/kernel/`.** The Specification pattern, `Range`/`EnumSet`/`SubstringQuery`/`PaginationParams`/`FolderReference` value objects, repository ports, Zod helpers, and the folder resolver moved from `src/filtering/shared/` to a top-level shared kernel used by both the filtering and compendium contexts (the future compendium search engine plugs into the same abstractions). All imports were rewritten to `@/kernel`; the unused `SortDirection` enum was dropped.
+
+### Technical
+
+- New context layout: `src/compendiums/{domain,application,infrastructure,validation}` — ports (`PackCatalog`, `PackIndexReader`, `PackIndexScanner`, `PackSearchEngine`, `PackDocumentReader`, `WorldImporter`, `ActorInventory`), services (`CompendiumQueryService`, `CompendiumImportService`), Foundry gateways, and tolerant request schemas. `compendiumMappers.ts` / `compendiumPackTypes.ts` / `worldDocumentClasses.ts` were absorbed into `infrastructure/` (five duplicated structural pack types consolidated into one `foundryPackTypes.ts`)
+- Cross-pack search laziness is preserved by design: `PackIndexScanner` enumerates packs via `forEach` only and loads each index lazily, so a capped search never touches packs past the limit
+- 2801 tests passing (272 suites): ~120 new layered tests for the compendium context (domain policies, gateways against fake `game`, services against fake ports, schema tolerance), ~68 for dnd5e compendium filtering, ~65 for the pf2e compendium-search slice (specifications, verified-path mappers incl. coins price normalization, repositories, schemas, handler contracts), plus `resolve-uuid` and `get-compendium` selection tests — on top of the untouched legacy handler contract suites
+- Compendium filtering reuses the existing Specification engine end-to-end: `CompendiumActorSnapshot`/`CompendiumItemSnapshot` extend the world snapshots (every specification class applies unchanged), `CompendiumActorRepository`/`CompendiumItemRepository` implement the kernel `FilterableRepository` port over `pack.getDocuments()` (v1 loads full documents; index-fields optimization is a future step), and the filtering context stays isolated from the compendiums context by design
+- System-separation ground work: current commands stay system-neutral (Actor/Item packs of a foreign system never load into a world — `CONST.SYSTEM_SPECIFIC_COMPENDIUM_TYPES`), while future system-aware compendium features (`dnd5e/…`, `pf2e/…`) build on the context ports under `src/systems/<system>/`
+
+## [8.10.1] - 2026-07-02
+
+### Fixed
+
+- **Scene fog exploration was silently ignored on Foundry v14.** `create-scene` / `update-scene` wrote the `fogExploration` flag to `fog.exploration`, but v14 removed that field (it is now a deprecated getter) — the real field is the numeric `fog.mode` (`CONST.FOG_EXPLORATION_MODES`: `DISABLED=0`, `INDIVIDUAL=1`, `SHARED=2`). The boolean `fogExploration` param is now mapped to `fog.mode` on v14 (`true` → `INDIVIDUAL`, `false` → `DISABLED`) while v11–v13 keep writing the flat `fogExploration` field. The wire contract is unchanged — clients still send `fogExploration: boolean`. Verified against Foundry v14.364. (Scene `darkness` → `environment.darknessLevel` from v8.9.0 was re-confirmed correct on the same build.)
+
+### Technical
+
+- 2501 tests passing; the two scene v14-branch tests now assert `fog: { mode }` instead of `fog: { exploration }`
+- No wire-API changes; the boolean→mode mapping lives in `fogExplorationToMode()` in `sceneTypes.ts`
+- Live v14 verification also cleared the remaining v14 risk items with no code change needed: Foundry v14.364 still ships PIXI 7 (canvas capture / grid overlay unaffected) and `MeasuredTemplate` embedding still works (dnd5e AoE templates unaffected)
+
+## [8.10.0] - 2026-07-02
+
+### Added
+
+- **`search-compendiums` — cross-pack compendium name search.** Searches the index of every compendium pack for documents whose name contains a query substring (case-insensitive) and returns lightweight matches — `{ packId, packLabel, packType, system, id, name, documentType? }`. Optional `type` (pack document type, e.g. `Actor`/`Item`), `system` (e.g. `dnd5e`), and `limit` (default 100, capped inside the module) filters. Reads only `pack.getIndex()`, never full documents, so it stays fast across large packs. An empty result is `[]`, not an error.
+
+### Fixed
+
+- **MCP `compendium-search` always returned "No documents found".** The gateway's `get-compendiums` route intentionally returns metadata only with empty `documents: []` per pack (to avoid loading every pack's full documents), so the server-side tool that iterated those empty arrays never matched anything. The correct approach is to search `pack.index` inside Foundry and return only matches — enabled by the new `search-compendiums` command. (The gateway/MCP side is wired to this command separately in foundry-mcp.)
+
+### Technical
+
+- 2501 tests passing (was 2492 in v8.9.0; +9 covering multi-pack matching, type/system filters, limit capping across packs, empty-query and no-packs guards, optional `documentType`, and id fallback)
+- New command added to `CommandType`, `CommandParamsMap`, `CommandResultMap`, the handler barrels, and registered in `main.ts`; no changes to any existing command's params or results
+- `packLabel` is sourced from `pack.metadata.label` (consistent with `get-compendiums` / `get-compendium-index`)
+
+## [8.9.0] - 2026-07-02
+
+### Added
+
+- **Foundry VTT v14 compatibility.** The manifest now declares `compatibility.verified: "14"` and no longer caps at a `maximum`, so the module loads on Foundry v14 while continuing to support v11–v13 from a single build. A runtime version detector (`src/compat/foundryVersion.ts` — `foundryGeneration()` / `isV14Plus()`, reading `game.release.generation` with a `game.version` fallback) gates the few places where the v14 data model diverges.
+
+### Changed
+
+- **Scene lighting/fog writes adapt to the v14 schema.** `create-scene` and `update-scene` still accept the same `darkness` and `fogExploration` params, but on v14 they are written to the restructured schema (`environment: { darknessLevel }`, `fog: { exploration }`) and on v11–v13 to the legacy flat fields. `get-scene` reads darkness from `environment.darknessLevel` with a fallback to the flat field. The wire protocol is unchanged — clients send and receive the same fields on every Foundry version.
+- **Token door-crossing movement drops the removed `teleport` update option on v14.** The `move-token` door-opening step used the v11–v13 `{ teleport: true }` update flag, which no longer exists in v14's movement model; on v14 the step falls back to a normal animated move. Purely internal — not a `move-token` param.
+
+### Technical
+
+- 2492 tests passing (was 2478 in v8.8.0; +14 across the version detector and the v13/v14-branching scene and token tests)
+- No breaking wire-API changes — no commands added or removed, and every command's params and results are identical across Foundry v11–v14; all v14 differences are absorbed inside the module
+- `compatibility.maximum` was also removed from the release workflow's Foundry-package publish payload (`.github/workflows/release.yml`) to match the manifest
+- v14 schema paths (`environment.darknessLevel`, `fog.exploration`) and the token movement change remain to be confirmed against a live v14 build
+
+## [8.8.0] - 2026-06-26
+
+### Added
+
+- **Pathfinder 2e (PF2e) support — 14 new `pf2e/*` commands.** First non-dnd5e game system. Each command is a fully independent PF2e implementation (its own DDD slice under `src/systems/pf2e/`), verified against the installed pf2e 7.12.2 API:
+  - **Rolls** — `pf2e/roll-skill`, `pf2e/roll-save` (fortitude/reflex/will), `pf2e/roll-perception` via the PF2e Statistic API (`actor.skills[slug].check.roll`, `actor.saves`, `actor.perception`). Degree of success maps to the neutral critical/fumble flags. PF2e has no bare ability checks, so there is no `pf2e/roll-ability`.
+  - **Conditions** — `pf2e/set-condition` (valued conditions set to an exact value), `pf2e/remove-condition`, `pf2e/get-conditions`, `pf2e/increase-condition`, `pf2e/decrease-condition` via `actor.increaseCondition`/`decreaseCondition`. 43 supported slugs (excludes `persistent-damage` and `malevolence`); the 12 valued conditions are tracked.
+  - **Strikes** — `pf2e/list-strikes`, `pf2e/roll-strike` (multiple-attack-penalty step via `mapIncrease` 0/1/2 → 0/−5/−10), `pf2e/roll-strike-damage` (normal or `critical`) via `actor.system.actions[].variants[].roll` / `damage()` / `critical()`.
+  - **Item use** — `pf2e/use-consumable` (`consume()`), `pf2e/cast-spell` (cast via the spell's spellcasting entry, optional heightened `rank`), `pf2e/post-item` (`toMessage()`). PF2e has no generic `item.use()`, so the entry points are per item type.
+- **`dnd5e/roll-perception`** (and neutral `roll-perception`) — perception check, implemented as the `prc` skill.
+
+### Changed
+
+- **System-mismatch guard on all system-aware commands** — every `<system>/<command>` (and the legacy bare aliases) now calls `requireSystem(...)`. Invoking a command in a world running a different game system returns a clear `Operation '<command>' is not supported by game system '<world>'` error instead of running mismatched logic against incompatible actor data.
+- **Full per-system separation** — the neutral roll seam introduced earlier (`getGameSystem` + `src/systems/contracts/`) was removed in favour of independent per-system slices: dnd5e and PF2e each own their handlers, gateways, services, and validation. Adding a system never touches another system's code. dnd5e roll behaviour in a dnd5e world is unchanged.
+
+### Technical
+
+- 2478 tests passing (was 2400 in v8.7.0; +78 across the new PF2e bounded contexts and the separation refactor)
+- 14 `pf2e/*` commands plus `dnd5e/roll-perception` / `roll-perception` added to `CommandType`, `CommandParamsMap`, `CommandResultMap`, and registered in `main.ts`
+- No breaking wire-API changes — existing commands' params and results are unchanged; all additions are additive
+- PF2e API verified against the locally installed pf2e 7.12.2 (the system's internal JS API drifts between releases)
+
+## [8.7.0] - 2026-06-24
+
+### Added
+
+- **System-namespaced commands for the remaining 6 dnd5e roll/item actions** — `dnd5e/roll-ability`, `dnd5e/roll-save`, `dnd5e/roll-attack`, `dnd5e/roll-damage`, `dnd5e/use-item`, and `dnd5e/activate-item`. Completes the `<system>/<command>` scheme started with `dnd5e/roll-skill` in v8.6.0. Every legacy name is retained as a **deprecated alias** routing to the same handler, so existing clients are unaffected.
+
+### Changed
+
+- **The 6 handlers refactored into DDD bounded contexts under `src/systems/dnd5e/`**, making the dnd5e coupling explicit and laying the groundwork for other game systems (e.g. Pathfinder 2e). Three contexts: `rolls/` (skill/ability/save — actor d20 checks; adds an `AbilityKey` value object and a shared `rollD20` gateway helper), `item-rolls/` (attack/damage — item-activity rolls behind a shared `attackActivityResolver`), and `item-actions/` (use/activate — item usage; activate-item's targeting and Midi-QOL workflow are modelled as separate injected ports, with the AoE template monkeypatch quarantined in infrastructure). Behaviour is unchanged — identical Foundry calls, result JSON, and error messages.
+- New shared domain errors: `ItemNotFoundError`, `ActivityResolutionError`, `TargetTokenNotFoundError`.
+
+### Fixed
+
+- **Midi-QOL workflow timeout timer is now cleared once the workflow resolves** — previously the 30s `setTimeout` armed by `activate-item` lingered after a fast Midi-QOL completion (later resolving an abandoned promise). It is now cleared on completion and on cancellation.
+
+### Technical
+
+- 2400 tests passing (was 2347 in v8.6.0; +53 across the new bounded-context layers)
+- No breaking wire-API changes — every new `dnd5e/*` command ships alongside its deprecated legacy alias in `CommandType`, `CommandParamsMap`, `CommandResultMap`, and `main.ts`
+- All existing handler tests pass unchanged (behaviour-preserving refactor)
+
+## [8.6.0] - 2026-06-24
+
+### Added
+
+- **`dnd5e/roll-skill` command** — system-namespaced skill roll, the first command of a new game-system-explicit naming scheme (`<system>/<command>`). Lays the groundwork for supporting non-dnd5e systems (e.g. Pathfinder 2e) by making the target system explicit on the wire instead of implicit in the handler. Fully backward compatible: the legacy `roll-skill` is retained as a deprecated alias routing to the same handler, so existing clients are unaffected.
+
+### Changed
+
+- **`roll-skill` refactored into a DDD bounded context** — the previously flat handler now delegates to a layered `src/systems/dnd5e/rolls/` context (domain value objects + `ActorRollPort`, application service, infrastructure anti-corruption gateway, Zod validation), mirroring the existing `filtering/` architecture. The dnd5e-specific Foundry roll API is quarantined behind the port, making the system boundary explicit. Behaviour is unchanged — identical Foundry calls, result shape, and error messages.
+- **New `src/systems/shared/` kernel** — neutral `RollOutcome`, domain error hierarchy, and Zod error formatter, shared by future per-system contexts.
+
+### Technical
+
+- 2347 tests passing (was 2340 in v8.5.1; +9 layer tests for the new bounded context, −2 relocated skill-key vocabulary tests)
+- `dnd5e/roll-skill` added to `CommandType`, `CommandParamsMap`, `CommandResultMap`; registered in `main.ts` alongside the deprecated `roll-skill` alias
+- No breaking wire-API changes
+
+## [8.5.1] - 2026-05-04
+
+### Fixed
+
+- **`end-combat` blocked on Foundry UI confirmation dialog** — calling `end-combat` programmatically (via WebSocket on either MCP or public API channel) opened a Foundry UI dialog ("End Encounter? End this encounter and empty the turn tracker?") with Yes/No buttons and waited for a human click. The command never resolved without manual interaction. Foundry's `combat.endCombat()` is implemented as a `Dialog.confirm()` wrapper around `this.delete()` — unsuitable for automation. **Fix:** handler now calls `combat.delete()` directly, bypassing the dialog. Behavior is semantically identical (Foundry's design treats encounter end = combat document deletion). Note: `delete-combat` already worked correctly; this aligns `end-combat` with the same direct path.
+
+- **`set-combatant-defeated` (and related combatant-update commands) crashed on idempotent no-op calls** — calling `set-combatant-defeated` with `defeated: false` on a combatant whose current state was already `defeated: false` returned a 502 with `Cannot read properties of undefined (reading 'id')`. Root cause: Foundry's `Document#update()` returns `undefined` when there are no actual changes (no-op optimization), but the handler then tried to map the undefined result through `mapCombatantToResult()`. Symmetric crash existed for `defeated: true` on already-defeated combatants. **Fix:** handlers now fall back to the existing combatant reference when `update()` returns undefined (`updated ?? combatant`), making idempotent calls a successful no-op as expected. Same fix proactively applied to `update-combatant` and `toggle-combatant-visibility` (same bug class).
+
+### Technical
+
+- 2340 tests passing (was 2336 in v8.5.0; +4 new regression tests for end-combat-without-dialog and idempotent combatant updates)
+- `FoundryCombatant#update()` type signature changed from `Promise<FoundryCombatant>` to `Promise<FoundryCombatant | undefined>` to reflect Foundry's actual no-op behavior
+- No public wire API changes — both fixes are internal handler corrections
+
+## [8.5.0] - 2026-05-03
+
+Major release adding **55 new commands across 11 categories**, plus a critical fix for the dice rolling logic. Total command surface grows from ~80 to ~135 commands. All new commands work on both WebSocket channels (MCP + public API) automatically.
+
+### Added
+
+**Folders (5 commands)** — universal CRUD for Foundry folders of any document type (Actor / Item / Scene / JournalEntry / RollTable / Macro / Cards / Playlist / Compendium).
+- `get-folders` — list all folders, optional filter by type
+- `get-folder` — single folder with recursive subfolder tree + optional content IDs
+- `create-folder` — `{name, type, parentId?, color?, description?, sort?}`
+- `update-folder` — partial update including reparenting (`parentId: null` → root)
+- `delete-folder` — with `deleteSubfolders` and `deleteContents` options
+
+**World-level Item CRUD (4 commands)** — manage items in `game.items` (Items Directory), parallel to existing actor CRUD. Previously the module only supported embedded items inside actors.
+- `create-item`, `update-item`, `delete-item` — symmetric to actor CRUD
+- `create-item-from-compendium` — clone item from compendium pack into world
+
+**`filter-items` (1 command, full DDD bounded context)** — D&D 5e-aware structured search across world items with 12 filters: name, type, rarity, requiresAttunement, identified, weight range, price range (normalized to gp), spellLevel range, spellSchool, hasActivities, isContainer, folder. Reuses the shared kernel from `filter-actors`. Anti-corruption layer in `FoundryItemMapper` handles all known D&D 5e schema variants (cr as number/object, attunement as string/number/object/boolean, weight forms, price denominations, 3-letter spell school codes).
+
+**Compendium efficient access (4 commands)** — replace heavy `pack.getDocuments()` (loads all documents) with native `pack.getIndex()` and `pack.search()`. Critical for large packs (D&D 5e SRD has 300+ items, 200+ monsters).
+- `get-compendium-index` — lightweight index with optional dot-path fields
+- `search-compendium` — Foundry's native full-text search + structured `FieldFilter[]` (operators: EQUALS / CONTAINS / STARTS_WITH / ENDS_WITH / LESS_THAN / LESS_THAN_EQUAL / GREATER_THAN / GREATER_THAN_EQUAL / BETWEEN / IS_EMPTY)
+- `get-compendium-document` — single full document by id (no full-pack load)
+- `import-from-compendium` — generic import for any document type via `pack.metadata.type` lookup
+
+**Macros (6 commands, security-gated)** — completely new category. Foundry macros support `chat` (safe — chat-style commands) and `script` (arbitrary JavaScript with GM privileges — critical security risk).
+- `get-macros`, `get-macro` — read operations (always safe)
+- `create-macro`, `update-macro`, `execute-macro` — gated by new opt-in setting `allowScriptMacros` (default false). Throws if attempting to create / modify / execute a `script`-type macro without explicit user permission.
+- `delete-macro` — ungated (deletion doesn't execute code)
+- New Foundry setting `allowScriptMacros` registered in module settings UI with explicit security warning hint.
+
+**Scene CRUD (5 commands)** — previously only read + activate + capture were supported.
+- `create-scene` — full scene creation with grid config, background, navigation
+- `update-scene` — partial update of any field
+- `delete-scene`
+- `clone-scene` — duplicate via `scene.clone({}, {save: true})` with optional name/folder override
+- `view-scene` — GM-only navigation (preview without activating for players)
+
+**Wall full CRUD (4 commands)** — previously only `set-door-state` existed.
+- `get-walls` — list all walls of a scene with `c[x1,y1,x2,y2]`, door type/state, restrictions
+- `create-wall`, `update-wall`, `delete-wall` — full wall lifecycle, all enum fields use string wire DTOs (door: `none/door/secret`, doorState: `closed/open/locked`, move/sense/sound/light: `none/normal/limited`, dir: `both/left/right`)
+
+**Note CRUD (4 commands)** — journal pins on scene maps, attached to JournalEntry/JournalEntryPage.
+- `get-notes`, `create-note`, `update-note`, `delete-note` — full lifecycle. Icon supports both `{src, tint}` object and bare-string forms. `textAnchor` accepts strings (`center/bottom/top/left/right`).
+
+**Token utilities (5 commands)** — beyond the existing CRUD + move + scene-list.
+- `get-token` — single token by id with full data including HP/AC from linked actor (defensive nulls)
+- `get-token-by-actor` — find first token of a given actor on scene
+- `set-token-target` — set/unset GM target via canvas placeable layer
+- `clear-targets` — clear all current targets
+- `get-tokens-in-range` — Chebyshev distance from origin point to token bounding box, scaled to scene grid units, sorted ascending
+
+**Playlist core (8 commands)** — completely new audio category.
+- `get-playlists`, `get-playlist` — read with embedded sounds and play state
+- `play-playlist`, `stop-playlist` — `playAll()` / `stopAll()`
+- `play-sound-in-playlist`, `stop-sound-in-playlist` — individual track control
+- `play-sound-once` — fire-and-forget SFX via `foundry.audio.AudioHelper.play()` with v11 fallback to global `AudioHelper`
+- `add-sound-to-playlist` — load new track into existing playlist
+
+**System runtime (9 commands)** — new category for non-document operations.
+- World time: `get-world-time`, `advance-time` (positive or negative seconds — triggers calendar hooks), `set-world-time` (validated `>= 0`)
+- Pause: `pause-game`, `resume-game`, `get-pause-state` — explicit state via `togglePause(state, {broadcast: true})`
+- UI: `notify` (info/warn/error/success — fallback to info on Foundry < v11), `pan-canvas` (animated pan), `ping-location` (highlight a point with style/color/duration)
+
+### Fixed
+
+- **`roll-dice` lost `isCritical` / `isFumble` flags on advantage/disadvantage rolls (2d20kh1, 2d20kl1)** — the previous `checkCritical()` implementation filtered for d20 dice groups with `count === 1`, which excluded the entire 2d20 group used by D&D 5e advantage/disadvantage. Empirically: 60 advantage rolls with 7 natural 20s in raw results → all 7 returned `isCritical: false`. Plain `1d20` rolls were unaffected. **Fix:** `checkCritical()` now walks `roll.terms` directly, finds d20 die terms, and inspects each result's `.active: boolean` flag (Foundry sets this to `false` for results discarded by `kh` / `kl` modifiers). Only `active !== false` results count. Backward compat: results missing the `active` field are treated as kept.
+
+### Changed
+
+- **DDD shared kernel promoted** — `FolderReference`, `FolderSpecification`, `FoundryFolderResolver`, and `folderReferenceSchema` migrated from `src/filtering/actors/` to `src/filtering/shared/`. `FoundryFolderResolver` is now parameterized by `folderType: string` (works for any document type). `FolderSpecification` is generic `<T>` with extractor function. Validates the shared kernel as truly reusable — third bounded context will need only ~600 lines vs ~1500.
+
+### Technical
+
+- 2336 tests passing (was 1430 in v8.4.0; +906 new tests across 11 new handler categories)
+- 100% statement / branch / function / line coverage on all new production files
+- New dependency: none (zod, already present from v8.3.0, used in `filter-items`)
+- New module config setting: `allowScriptMacros` (boolean, default `false`)
+- New directories: `src/commands/handlers/folder/`, `macro/`, `note/`, `playlist/`, `system/`, `wall/`, `src/filtering/items/`
+- Shared kernel additions: `src/filtering/shared/infrastructure/`, generic FolderSpecification, FolderResolver interface, folderReferenceSchema
+- Anti-corruption layer (`FoundryItemMapper`) handles dnd5e schema variations across versions
+- Bundle size: 339 KB / 65 KB gzipped (was ~272 KB / 53 KB in v8.4.0)
+- All 55 new commands automatically available on both WebSocket channels (MCP + public API) with no per-channel configuration
+
+## [8.4.0] - 2026-04-27
+
+### Added
+- **Second WebSocket channel for public Foundry API** — module now opens two independent WebSocket connections in parallel:
+  - **MCP channel** (existing): connects to `wss://foundry-mcp.com/ws` for Claude / AI assistant integrations via the MCP protocol
+  - **API channel** (new): connects to `wss://api.foundry-mcp.com/v1/connect` for the public REST/WebSocket API used by third-party developers (bots, dashboards, mobile apps, Discord integrations)
+- Both channels are fully independent: failure or reconnection of one has no effect on the other. Each has its own retry loop and auto-reconnect with exponential backoff.
+- Both channels share the same `apiKey` (validated server-side for both products) and the same `commandRouter` — every existing command handler (get-actor, roll-dice, etc.) works identically regardless of which channel the request arrived on.
+- Responses are routed back via the originating socket — guaranteed by closure capture, no cross-channel leakage.
+
+### Changed
+- **Settings UI** — existing "WebSocket URL" label renamed to **"MCP WebSocket URL"** for clarity. New **"API WebSocket URL"** field added below it (default `wss://api.foundry-mcp.com/v1/connect`). The persisted setting key `wsUrl` is unchanged for backward compatibility — existing user values are preserved.
+- **Logging** — connection logs now use channel prefixes `[MCP]` / `[API]` for easier debugging when both channels are active.
+
+### Technical
+- 1424 tests passing (was 1416 in v8.3.1; +8 new tests covering logPrefix and apiUrl getter/registration)
+- `WebSocketClient` constructor accepts optional `logPrefix?: string`
+- `SettingsManager` exposes new getter `getApiUrl()`
+- `main.ts` refactored: single `wsClient` replaced by separate `mcpClient` and `apiClient` module-level handles, dual wiring extracted into `createChannel()` helper
+- No public API change to command handlers; no protocol or wire-format changes
+- Both channels start automatically when `apiKey` is set and at least one URL is configured (no opt-in toggle)
+
+## [8.3.1] - 2026-04-27
+
+### Fixed
+- **Module fails to initialize in production build (v8.3.0)** — `Cannot access 'CompositeSpecification' before initialization` ReferenceError on module load. Caused by Vite bundler reordering Specification pattern modules in a way that broke the registry-with-deferred-wireup approach used to resolve the circular dependency. Symptoms: module showed in module list but disappeared from settings, and WebSocket never connected.
+- Consolidated all Specification primitives (`CompositeSpecification`, `AndSpecification`, `OrSpecification`, `NotSpecification`, `AlwaysTrueSpecification`, `AlwaysFalseSpecification`) into a single source file. Within-module declaration order is deterministic regardless of bundler. Individual class files retained as thin re-export shims so existing tests and imports keep working.
+
+### Technical
+- 1416 tests passing (was 1420 in v8.3.0; 4 tests removed with the now-redundant `compose.ts` registry helper)
+- No public API change — `import { AndSpecification } from '@/filtering/shared/domain/specification'` works identically
+
+## [8.3.0] - 2026-04-27
+
+### Added
+- **`filter-actors` command** — structured search across world actors with 12 D&D 5e-aware filters
+  - Filters: `name` (substring), `type`, `creatureType` (14 SRD types), `size`, `disposition`, `hasPlayerOwner`, `cr` (D&D-valid values), `level`, `maxHp`, `currentHp`, `ac`, `abilities` (per-stat ranges), `folder` (id/name + recursive)
+  - Range type with inclusive bounds, AND between filters, OR within array enums
+  - Pagination: `limit` (default 50, max 200), `offset`, response with `total`/`hasMore`
+  - Stable sorting: name ASC, id tiebreaker
+  - Silent exclude for incompatible fields (e.g. `cr` filter on PCs)
+  - Strict validation via Zod with descriptive error messages
+
+### Technical
+- 1420 tests (+736 new for filter-actors feature)
+- New DDD architecture in `src/filtering/`:
+  - **Shared kernel** (`shared/`): Specification Pattern + composites (And/Or/Not/AlwaysTrue/AlwaysFalse), Value Objects (Range, PaginationParams, EnumSet, SubstringQuery), generic FilterableRepository, validation helpers, SpecificationBuilder, executeFilterQuery
+  - **Bounded context** (`actors/`): 7 D&D 5e Value Objects, 13 Specifications (one per filter), Zod schemas + RequestToQueryMapper, FilterActorsService + ActorSpecificationBuilder, FoundryActorMapper / FoundryFolderResolver / FoundryActorRepository (anti-corruption layer)
+- Reusable kernel — adding `filter-items`/`filter-journals` requires only new VOs + Specifications + Repository, shared kernel untouched
+- `zod ^4.3.6` added as production dependency
+- 100% statement/branch/line coverage on all 60+ new production files
+
+## [8.2.0] - 2026-04-20
+
+### Added
+- **`show-journal` command** — push journal entries or specific pages to players' screens
+  - Params: `journalId`, optional `pageId`, `force` (override permissions), `users` (specific user IDs)
+  - Returns: `shown`, `journalId`, `journalName`, optional `pageId`
+- **PDF page type** — `JournalPageType` now includes `'pdf'` alongside text, image, video
+- **`src` field for journal pages** — `create-journal-page` and `update-journal-page` accept `src` parameter for image/video/pdf page source URLs
+- **Content enrichment on read** — `get-journals` and `get-journal` now return `enrichedText` field with Foundry-processed HTML (resolved `@UUID` links, `@Embed` content, inline rolls). Raw `text` preserved alongside
+- **`src` field in journal page responses** — `get-journals`, `get-journal` now include page source URL
+
+### Technical
+- 684 tests (18 new for journal improvements)
+- `TextEditor.enrichHTML()` integration with graceful fallback when unavailable
+- `GetJournalsHandler`/`GetJournalHandler` refactored to async for enrichment pipeline
+
+## [8.1.0] - 2026-04-15
+
+### Added
+- **Chat read/manage commands** — AI DM can now read, search, edit, and manage the Foundry chat log
+  - `get-chat-messages` — read chat history with filtering (by author, actor, message type, text search), cursor-based pagination (`since`/`before`), configurable limit (default 20, max 100). Returns stripped-text content for LLM context, optional roll data
+  - `delete-chat-message` — delete a specific chat message by ID
+  - `update-chat-message` — edit content or flavor text of an existing message
+  - `clear-chat` — delete all chat messages (bulk operation)
+  - `export-chat` — export full chat log as plain text (Foundry's native format) or JSON
+- **Patreon sponsor button** — `.github/FUNDING.yml` with Patreon link
+
+### Changed
+- **README rewritten** — removed outdated REST API references, added complete command list, accurate settings, development section
+
+### Technical
+- 666 tests (36 new for chat handlers)
+- New handler group: `src/commands/handlers/chat/`
+- Shared types: `chatTypes.ts` with Foundry ChatMessage interfaces, `stripHtml` utility, style maps
+- HTML content stripped to plain text for LLM-friendly output
+
+## [8.0.1] - 2026-04-12
+
+### Fixed
+- **Door-aware movement: endpoint-touching doors not detected** — `segmentsIntersectRelaxed` catches doors where movement ray touches wall endpoint (e.g. diagonal door at [3800,2162,3800,2400])
+- **Foundry v13 collision validation breaks token movement** — hybrid approach: normal steps use `animate: true`, door-crossing steps use `animate: true, teleport: true` to bypass stale collision cache
+- **400ms delay after door open** — gives Foundry time to update collision state before token moves through
+
+### Technical
+- 630 tests
+- New: `segmentsIntersectRelaxed` with `onSegment` endpoint check
+- `moveAlongPathWithDoors` uses hybrid animate/teleport per step
+
+## [8.0.0] - 2026-04-12
+
+### Added
+- **`set-door-state` command** — open, close, or lock doors on the scene
+  - Params: `wallId`, `state` (0=closed, 1=open, 2=locked), optional `sceneId`
+  - Returns: `wallId`, `door` type, `previousState`, `newState`
+  - Validates wall is actually a door (door !== 0) and state is valid (0-2)
+- **Door-aware token movement** — `move-token` with `canOpenDoors: true`
+  - Pathfinder treats closed unlocked doors (door=1, ds=0) as passable
+  - Locked doors (ds=2) and secret doors (door=2) remain impassable
+  - During movement: token approaches door → door opens → token continues
+  - Full animation on every step for visual clarity
+  - Response includes `doorsOpened: string[]` with wall IDs of doors opened
+- **Token size in pathfinding** — Large/Huge/Gargantuan tokens correctly blocked by narrow passages
+  - `isBlocked` checks ALL cells of token footprint (W×H collision checks per step)
+  - `isDirectPathBlocked` helper for multi-cell direct path validation
+  - 2×2 token cannot pass through 1-wide corridor; 3×3 token routes around obstacles
+- **`width` and `height` in `TokenResult`** — token size in grid cells (1=Medium, 2=Large, 3=Huge)
+- **`pathCost` in `TokenResult`** — A* path cost in grid cells (only when pathfinding triggered)
+- **`id` and `ds` in `SceneWallResult`** — wall ID and door state now visible in `get-scene` response
+- **Animation smoothing** — intermediate pathfinding waypoints are instant, only final step animates
+- **`getCellCost` callback** in `PathfinderConfig` — hook for future difficult terrain support
+
+### Changed
+- **BREAKING**: `TokenResult` has two new required fields: `width: number`, `height: number`
+- **BREAKING**: `SceneWallResult` has two new required fields: `id: string`, `ds: number`
+- **BREAKING**: `findGridPath` now returns `PathResult { path, cost }` instead of `Point[]`
+- `MoveTokenParams` accepts optional `canOpenDoors?: boolean`
+- `TokenResult` has optional `pathCost?: number` and `doorsOpened?: string[]`
+
+### Technical
+- 624 tests (47 new)
+- New modules: `DoorAwareCollision.ts`, `door/SetDoorStateHandler.ts`, `door/doorTypes.ts`
+- `segmentsIntersect` — cross-product line intersection for wall/door analysis
+- `findDoorsAlongPath` — identifies doors along computed path with waypoint indices
+
+## [7.7.0] - 2026-04-07
+
+### Added
+- **`get-combat-turn-context`** — tactical situation for AI DM at each combat turn
+  - Current combatant: id, actorId, tokenId, name, grid position, HP, AC, conditions
+  - Nearby combatants: sorted by distance, with distanceFt, disposition (hostile/neutral/friendly), HP, AC, conditions, actorId
+  - **Line of sight** detection via `testCollision(type: "sight")` — knows if current combatant can see each enemy
+  - **Zoomed ASCII map** centered on current token (12-cell radius) — tactical overview without full scene weight
+  - Only active combatants included (no decorative tokens)
+- **ASCII map zoom mode** — `AsciiMapGenerator` now accepts optional `center` + `radius` for focused view
+
+### Technical
+- 577 tests (14 new: 12 handler + 2 ASCII zoom)
+- Cross-domain handler: reads combat state, scene tokens, wall collisions, sight lines
+- Tested live on Cragmaw Castle combat encounter
+
+## [7.6.0] - 2026-04-07
+
+### Added
+- **Grid coordinate overlay on screenshots** — AI can now read exact grid coordinates from visual elements
+  - Each cell labeled with `x,y` coordinates in top-left corner (white text, dark outline, 65% opacity)
+  - Semi-transparent grid lines for visual alignment
+  - Overlay is temporary — created before screenshot, destroyed after. Players never see it
+  - Applied to both `get-scene` (with `includeScreenshot: true`) and standalone `capture-scene`
+  - Graceful degradation: screenshot without overlay if PIXI unavailable
+
+### Technical
+- 563 tests (8 new for GridOverlay)
+- New: `GridOverlay.ts` — PIXI Container with Graphics (lines) + Text (labels)
+- Font size: 22% of grid cell, stroke thickness: 15% of font size (min 2px)
+
+## [7.5.1] - 2026-04-07
+
+### Fixed
+- **`move-token` crash on long pathfinding routes** — "Cannot read properties of undefined (reading 'update')"
+  - Root cause: `token.update()` return value was unreliable during sequential waypoint moves
+  - Fix: re-fetch token from scene collection by ID after each waypoint update
+  - Token now visually moves through each waypoint with animation
+  - Tested on Cragmaw Castle: cross-map diagonal routes work smoothly
+
+## [7.5.0] - 2026-04-07
+
+### Added
+- **Grid A* pathfinding in `move-token`** — tokens automatically navigate around walls
+  - When direct path is blocked by walls, module finds an alternate route using A* on the grid
+  - Uses Foundry collision API (`CONFIG.Canvas.polygonBackends.move.testCollision()`)
+  - 8-directional movement (orthogonal + diagonal)
+  - Tokens animate through each waypoint sequentially
+  - Returns error `"Path blocked — no valid route to destination"` if completely enclosed
+  - Graceful degradation: direct move when collision backend unavailable (v12 without canvas)
+- New: `GridPathfinder.ts` — pure A* function, no Foundry globals dependency, fully testable
+
+### Changed
+- `move-token` no longer teleports tokens through walls
+- API contract unchanged — same params, same result type, server needs no changes
+
+### Technical
+- 555 tests (16 new: 11 pathfinder + 5 handler)
+- Chebyshev heuristic, maxNodes=2500 safety limit
+- Elevation and rotation applied to final waypoint only
+
+## [7.4.0] - 2026-04-07
+
+### Added
+- **ASCII tactical map in `get-scene`** — always included in response
+  - Wall collision detection via `CONFIG.Canvas.polygonBackends.move.testCollision()`
+  - Walls (`|` `---`), doors (`D`), open doors (`d`), locked doors (`L`), secret doors (`?`)
+  - Numbered token IDs with multi-cell support (2x2, 3x3)
+  - Legend with token name, size, HP, grid position
+  - Coordinate axes for precise reference
+- **Optional screenshot in `get-scene`** — `includeScreenshot: true` param
+  - Returns `screenshot` field with base64 WebP image when canvas is available
+  - Graceful degradation: omitted when canvas not ready
+
+### Changed
+- `GetSceneParams` now accepts `includeScreenshot?: boolean`
+- `SceneDetailResult` now includes `asciiMap: string` and optional `screenshot: SceneScreenshot`
+
+### Technical
+- 539 tests (15 new for ASCII map generator)
+- New: `AsciiMapGenerator.ts` — pure function, fully testable without Foundry globals
+
+## [7.3.1] - 2026-04-06
+
+### Fixed
+- **`capture-scene`** — fixed black/empty screenshots
+  - PIXI `extract.base64()` failed with "ICanvas.toBlob failed!" due to WebGL buffer issues
+  - PIXI `extract.canvas()` returned empty canvas (WebGL texImage2D out of range)
+  - Solution: `renderer.render(stage)` + `view.toDataURL()` — forces a fresh render then captures the WebGL canvas before buffer clear
+  - Verified in live Foundry VTT with actual scene (Cragmaw Castle, 6400x4600)
+
+## [7.3.0] - 2026-04-06
+
+### Added
+- **`capture-scene`** — live canvas screenshot for AI DM vision
+  - Returns base64 WebP image of the current canvas (map, tokens, lighting, tiles)
+  - Graceful degradation: returns `"Canvas not ready"` error when GM's browser tab is in background
+  - Server embeds screenshot into existing `get-scene` response for AI context
+  - WebP format with 0.8 quality for reasonable payload size
+
+### Technical
+- 522 tests (8 new)
+- Uses PIXI.js `canvas.app.renderer.extract.base64(canvas.stage)`
+- Strips `data:image/webp;base64,` prefix — returns raw base64
+
+## [7.2.0] - 2026-04-05
+
+### Added
+- **Roll Table commands** — full CRUD + roll + reset for Foundry Roll Tables
+  - `list-roll-tables` — list all tables with summary (total/drawn counts)
+  - `get-roll-table` — full table with all results
+  - `roll-on-table` — roll dice and get result (uses `table.draw()`, respects replacement)
+  - `reset-table` — reset all drawn results back to available
+  - `create-roll-table` — create table with optional initial results
+  - `update-roll-table` — update table metadata
+  - `delete-roll-table` — delete table
+- New handler group: `src/commands/handlers/table/`
+- v12/v13 compatibility: handles both `text`/`name` and numeric/string `type` fields
+
+### Technical
+- 514 tests (36 new)
+
+## [7.1.0] - 2026-04-04
+
+### Changed
+- **`get-actor`**: items now include full `system` data (via `toObject(false).system`) — descriptions, damage formulas, range, etc.
+- **`get-actor-items`**: `ItemDetailSummary` enriched with `description` (HTML string), `damage` (object or null), `range` (object or null)
+- **`get-actor`**: `ItemSummary` type now includes `system: Record<string, unknown>`
+
+### Technical
+- 478 tests
+- Actor system data uses `getRollData()` (computed fields including `abilities.*.save`)
+- Item system data uses `toObject(false).system` (raw data including descriptions)
+
+## [7.0.0] - 2026-04-03
+
+### Breaking Changes
+- **Removed push mechanism entirely** — module no longer sends world data to the server via HTTP
+- Removed periodic world data sync (UpdateLoop)
+- Removed compendium auto-upload on connect
+- Removed REST API client (ApiClient)
+- Removed `window.FoundryAPIBridge` global API
+- Removed `Server URL` setting (only WebSocket URL and API Key remain)
+- Removed config sections: `apiServer`, `features`, `compendium`
+- Simplified config to: `webSocket` + `logging` only
+
+### How it works now
+Module connects to Gateway via WebSocket and responds to incoming commands (pull architecture). All data is requested on demand by the server — no outbound HTTP, no timers, no periodic sync.
+
+### Removed
+- `src/api/` — ApiClient, SessionInfo, ApiError
+- `src/core/` — UpdateLoop with backoff logic
+- `src/collectors/` — WorldDataCollector, CompendiumCollector
+- `src/config/loader.ts` — config file migration
+- `src/config/merger.ts` — deep merge utility
+- `src/utils/` — validation helpers
+- `pauseGame` hook (no loop to pause)
+- UI: API Server Settings, Features toggles, Compendia Auto-Load selector
+- Types: `WorldData`, `ActorData`, `SceneData`, `SessionInfo`, `Window.FoundryAPIBridge`
+
+### Technical
+- 476 tests (from 572 — removed 96 push-related tests)
+- Bundle size: 70KB (down from 94KB, -25%)
+- Config form: WebSocket + Logging only
+
+## [6.13.0] - 2026-04-03
+
+### Added
+- **Pull-architecture commands (Batch 2)** — completes full data coverage for pull-based architecture
+  - `get-journals` — list all journals with pages (text, markdown content)
+  - `get-journal` — single journal by ID with full page content
+  - `get-items` — list all world items with system data
+  - `get-item` — single world item by ID
+  - `get-compendiums` — list all compendium packs with full metadata
+  - `get-compendium` — load all documents from a compendium pack (async, supports Actor items and JournalEntry pages)
+
+### Technical
+- 572 tests (40 new)
+- All pull data formats are 1:1 with push (`POST /update`) format
+- `get-compendium` is the only async handler (calls `pack.getDocuments()`)
+- After server integrates Batch 2, push mechanism can be fully retired
+
+## [6.12.0] - 2026-04-03
+
+### Added
+- **Pull-architecture commands (Batch 1)** — Gateway can now request data from Foundry on demand via WebSocket instead of relying solely on periodic push
+  - `get-world-info` — world metadata, entity counts, compendium pack list
+  - `get-actors` — list all actors (id, name, type, img)
+  - `get-actor` — full actor data by ID (system data via getRollData, item summaries)
+- New handler group: `src/commands/handlers/world/`
+
+### Changed
+- `ActorDetailResult` type changed from dnd5e-specific (hp, ac, abilities, skills) to system-agnostic (`system: Record<string, unknown>`) matching the push format
+- `get-actors` result type changed from `{ actors: ActorSummary[] }` to flat `ActorSummary[]` matching server contract
+- Removed unused types: `ActorListResult`, `AbilityScore`, `SkillInfo`
+
+### Technical
+- 532 tests (24 new)
+- Data format from `get-actor` is identical to `WorldData.actors[]` from push (uses same `getRollData()`)
+- `get-world-info` data is identical to `WorldData.{ world, counts, compendiumMeta }` from push
+- Existing `get-scenes-list` covers `list-scenes` needs — no duplication
+
+## [6.8.0] - 2026-03-30
+
+### Changed
+- **activate-item now returns full results** from item usage
+  - `rolls[]` - dice results from Foundry (attack rolls, damage, etc.)
+  - `chatMessageId` - reference to created chat message
+  - `workflow` - full Midi-QOL automation results when Midi-QOL is installed
+- Midi-QOL workflow data includes: `attackTotal`, `damageTotal`, `isCritical`, `isFumble`, `hitTargetIds`, `saveTargetIds`, `failedSaveTargetIds`
+- Auto-detects Midi-QOL presence via `game.modules.get('midi-qol')` — zero overhead when not installed
+
+### Technical
+- Listens for `midi-qol.RollComplete` hook with 5s timeout safety
+- 481 tests
+
+## [6.7.0] - 2026-03-28
+
+### Added
+- **`activate-item` command** - Native item activation with full automation module support
+  - Calls `item.use()` / `activity.use()` without suppressing hooks or dialogs
+  - Enables Midi-QOL and other automation modules to intercept and run full pipeline
+  - `targetTokenIds` parameter for programmatic targeting before activation
+  - Clears existing targets and sets new ones via `canvas.tokens.get().setTarget()`
+- Supports `activityId` and `activityType` for selecting specific item activities
+
+### Technical
+- New handler: `src/commands/handlers/item/ActivateItemHandler.ts`
+- Targeting types added to `itemTypes.ts`: `FoundryTargetToken`, `FoundryCanvasTokensLayer`, `FoundryUser`
+- 474 tests
+
+## [6.6.0] - 2026-03-27
+
+### Added
+- **Scene lights** - Light sources with bright/dim radius, color, angle, wall interaction
+- **Scene tiles** - Decorative tile images with position, size, elevation, rotation
+- **Scene drawings** - Shapes (rectangle, ellipse, polygon, freehand) with fill/stroke colors and text
+- **Scene regions** - Named zones with geometric shapes (Foundry v13)
+- **Token grid positions** - `gridX`/`gridY` computed from pixel coordinates and grid size
+
+### Changed
+- `get-scene` result: `tokenCount` replaced with full `tokens[]` array including grid coordinates, actorId, disposition, hidden
+- REST `SceneData` extended with `lights[]`, `tiles[]`, `drawings[]`, `regions[]`
+- `pixelToGrid()` utility for coordinate conversion
+
+### Technical
+- 460 tests
+
+## [6.5.0] - 2026-03-26
+
+### Added
+- **Scene management commands** via WebSocket
+  - `get-scene` - Get detailed scene info (grid, darkness, notes, walls, token count)
+  - `get-scenes-list` - List all scenes (id, name, active, img)
+  - `activate-scene` - Switch the active scene
+- **Enriched scene data** in REST outbound
+  - `grid` - Grid size, type (square/hex), units, distance per cell
+  - `darkness` - Scene darkness level (0-1)
+  - `notes[]` - Map pins with text, label, linked journal entry
+  - `walls[]` - Wall segments with movement/vision blocking and door types
+- Scene handler group: `src/commands/handlers/scene/`
+
+### Technical
+- New types: `SceneDetailResult`, `SceneSummaryResult`, `SceneGridResult`, `SceneNoteResult`, `SceneWallResult`
+- `sceneTypes.ts` with Foundry interfaces and mapping functions
+- 452 tests
+
+## [4.11.0] - 2025-12-06
+
+### Changed
+- 📁 Reorganized journal handlers into dedicated folder (`src/commands/handlers/journal/`)
+- Clean handler structure: only `RollDiceHandler` remains in root, all domain handlers organized by folder
+
+### Technical
+- Moved 6 journal handlers to `src/commands/handlers/journal/`
+- Handler folders: `actor/`, `combat/`, `journal/`, `token/`
+- Shared types per domain: `actorTypes.ts`, `combatTypes.ts`, `journalTypes.ts`, `tokenTypes.ts`
+
+## [4.10.0] - 2025-12-05
+
+### Added
+- 🎭 **Actor CRUD commands** - Create, update, and delete actors via WebSocket
+  - `create-actor` - Create new actor (name, type, optional: folder, img, system data)
+  - `create-actor-from-compendium` - Import actor from compendium pack (packId, actorId, optional: name override, folder)
+  - `update-actor` - Update actor properties (name, img, folder, system data)
+  - `delete-actor` - Delete actor from world
+- 📁 Actor handlers in separate folder (`src/commands/handlers/actor/`)
+- Shared actor types and helper functions (`actorTypes.ts`)
+
+### Changed
+- Reorganized actor-related handlers into dedicated folder structure
+- Moved roll handlers (RollSkill, RollSave, RollAbility, RollAttack, RollDamage) to actor folder
+- Test coverage increased to 302 tests (24 new tests for actor CRUD)
+
+### Technical
+- 4 new handlers in `src/commands/handlers/actor/`
+- Foundry Actor API integration: Actor.create, actor.update, actor.delete, pack.getDocument
+- ActorResult includes id, uuid, name, type, img, folder
+- CreateActorFromCompendium validates pack type and copies actor data
+- DeleteResult returns { deleted: true }
+
+## [4.9.0] - 2025-12-05
+
+### Added
+- 🎭 **Token commands** - Full token management on scenes via WebSocket
+  - `create-token` - Create token on scene (actorId, x, y, optional: hidden, elevation, rotation, scale)
+  - `delete-token` - Delete token from scene
+  - `move-token` - Move token to new position (x, y, optional: elevation, rotation, animate)
+  - `update-token` - Update token properties (hidden, elevation, rotation, scale, name, displayName, disposition, lockRotation)
+  - `get-scene-tokens` - Get all tokens from scene (active or specific sceneId)
+- 📁 Token handlers in separate folder (`src/commands/handlers/token/`)
+- Shared token types and helper functions (`tokenTypes.ts`)
+
+### Changed
+- Test coverage increased to 278 tests
+
+### Technical
+- 5 new handlers in `src/commands/handlers/token/`
+- Foundry Token API integration: createEmbeddedDocuments, deleteEmbeddedDocuments, token.update, token.delete
+- TokenResult includes id, name, actorId, x, y, elevation, rotation, hidden, img, disposition
+- SceneTokensResult returns sceneId, sceneName, tokens array
+
+## [4.8.0] - 2025-12-04
+
+### Added
+- ⚔️ **Combat Tracker commands** - Full combat encounter management via WebSocket
+  - `create-combat` - Create new combat encounter (optional scene, activate)
+  - `add-combatant` - Add combatant to combat (by actorId/tokenId, with initiative)
+  - `remove-combatant` - Remove combatant from combat
+  - `start-combat` - Start combat (begin round 1)
+  - `end-combat` - End and delete combat encounter
+  - `next-turn` - Advance to next turn in initiative order
+  - `previous-turn` - Go back to previous turn
+  - `get-combat-state` - Get current combat state with all combatants
+- 🎲 **Initiative commands** - Roll and manage initiative values
+  - `roll-initiative` - Roll initiative for specific combatants (with optional custom formula)
+  - `set-initiative` - Manually set initiative value for a combatant
+  - `roll-all-initiative` - Roll initiative for all combatants (or NPCs only)
+- 🎭 **Combatant update commands** - Update combatant properties
+  - `update-combatant` - Update combatant properties (initiative, defeated, hidden)
+  - `set-combatant-defeated` - Set combatant defeated status
+  - `toggle-combatant-visibility` - Toggle combatant visibility for players
+- 📁 Combat handlers in separate folder (`src/commands/handlers/combat/`)
+- Shared combat types and helper functions (`combatTypes.ts`)
+
+### Changed
+- Test coverage increased to 256 tests
+
+### Technical
+- 14 new handlers in `src/commands/handlers/combat/`
+- Foundry Combat API integration: startCombat, nextTurn, previousTurn, endCombat, rollInitiative, rollAll, rollNPC, setInitiative, combatant.update
+- CombatResult includes round, turn, started status, combatants array, current combatant
+- InitiativeRollResult returns array of results with combatantId, name, initiative
+
+## [4.5.0] - 2025-12-03
+
+### Added
+- 📓 **Journal commands** - Full CRUD for journal entries and pages via WebSocket
+  - `create-journal`, `update-journal`, `delete-journal`
+  - `create-journal-page`, `update-journal-page`, `delete-journal-page`
+- Support for text, image, and video page types
+- Folder organization for journals
+
+### Changed
+- Test coverage increased to 183 tests
+
+## [4.0.0] - 2025-12-03
+
+### Added
+- 🔌 **WebSocket bidirectional communication** - Execute commands in Foundry from external server
+  - Auto-reconnecting WebSocket client with configurable retry logic
+  - Type-safe command router with handler registration
+  - `roll-dice` command for dice rolls via Foundry Roll API
+- 🎲 **Dice rolling via WebSocket**
+  - Support for any Foundry dice formula (`1d20+5`, `2d6kh1`, etc.)
+  - Optional chat output with flavor text
+  - Critical/fumble detection on d20 rolls
+  - Detailed dice results (individual die values)
+- ⚙️ **WebSocket configuration** in settings UI
+  - Enable/disable WebSocket
+  - Server URL configuration
+  - Reconnect interval and max attempts
+- 📁 **Import path aliases** - Clean imports with `@/` prefix
+- 📄 **CLAUDE.md** - AI assistant guidance for codebase
+
+### Changed
+- Architecture extended for bidirectional communication (REST out, WebSocket in)
+- Test coverage increased to 111 tests
+- `DeepPartial<T>` type for flexible partial configurations
+
+### Technical
+- `src/transport/WebSocketClient.ts` - WebSocket with auto-reconnect and DI for testing
+- `src/commands/CommandRouter.ts` - Type-safe command dispatch
+- `src/commands/handlers/RollDiceHandler.ts` - Foundry Roll API integration
+- `src/commands/types.ts` - Command/Response type definitions
+- `tsconfig.json` - Path aliases (`@/*` → `src/*`)
+
+## [3.1.0] - 2025-11-12
+
+### Added
+- ✨ **Premium UI Compendium Selection** - Beautiful, user-friendly interface for selecting compendia
+  - 🔍 **Live search/filter** - Instant search across name, ID, and type
+  - ✅ **Bulk actions** - "Select All" and "Deselect All" buttons (respects search filter)
+  - 📊 **Live counter** - Shows "X of Y selected" in real-time
+  - 🎨 **Rich compendium cards** - Icons, type badges, and document counts
+  - 🏷️ **Color-coded badges** - Visual distinction by document type (Actor/Item/Journal/etc.)
+  - 📈 **Document counts** - See how many documents each compendium contains
+  - 🎯 **Smart sorting** - Checked items appear first, then alphabetically
+  - ✨ **Smooth animations** - Hover effects and transitions
+  - ♿ **Accessibility** - Keyboard navigation and screen reader support
+- 📋 Detailed compendium setup guide (COMPENDIUM_SETUP.md)
+- 📖 Comprehensive UI improvements guide (UI_IMPROVEMENTS.md)
+- 🎨 Professional CSS styling with Foundry VTT design language
+
+### Changed
+- Settings form now displays available compendia with full metadata
+- Compendium selection automatically triggers auto-load on save
+- Improved user feedback with notifications after configuration save
+- Enhanced visual hierarchy and spacing throughout the form
+
+### Fixed
+- **Empty compendium list by default** - Users can now easily select compendia through UI instead of console commands
+- Improved readability with monospace IDs and clear labels
+
+## [3.0.0] - 2024-11-08
+
+### Added
+- ✨ Complete TypeScript rewrite with strict type checking (no `any` types)
+- ⚙️ UI-based configuration via Foundry settings menu
+- 🎨 Beautiful configuration form with proper styling
+- 📦 Modern build system with Vite
+- 🧪 Comprehensive unit test coverage (77 tests)
+- 🔍 ESLint 9 with strict TypeScript rules
+- 📝 JSON Schema validation for configuration
+- 🎯 Modular architecture with clean separation of concerns
+
+### Changed
+- Configuration now managed via Foundry UI instead of manual JSON editing
+- Settings stored in Foundry database instead of config.json file
+- Updated to work with Foundry VTT v11-13
+- Improved error handling and logging
+
+### Technical
+- TypeScript 5.6 with strictest possible settings
+- Vite 5.4 for fast builds
+- Jest 29 for testing
+- 77 unit tests with good coverage
+- Clean architecture: collectors, API client, config manager, settings manager
+
+## [2.2.0] - 2024-11-06
+
+### Added
+- AUTO-LOAD functionality for compendia
+- Configurable auto-load list in config.json
+
+## [2.1.0] - 2024-11-06
+
+### Added
+- Compendium support
+- Load and send compendium data to API server
+
+## [2.0.0] - Initial Release
+
+### Added
+- Core world data collection (journals, actors, scenes, items)
+- Periodic updates to external API server
+- Basic configuration via config.json

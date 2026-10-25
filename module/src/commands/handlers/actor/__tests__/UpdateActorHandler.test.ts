@@ -1,0 +1,203 @@
+import { updateActorHandler } from '../UpdateActorHandler';
+
+interface MockActorDoc {
+  id: string;
+  uuid: string;
+  name: string;
+  type: string;
+  img: string;
+  folder: { name: string } | null;
+  update: jest.Mock;
+}
+
+function createMockActor(): MockActorDoc {
+  return {
+    id: 'actor-123',
+    uuid: 'Actor.actor-123',
+    name: 'Original Character',
+    type: 'character',
+    img: 'icons/svg/mystery-man.svg',
+    folder: null,
+    update: jest.fn()
+  };
+}
+
+let mockActor: MockActorDoc;
+
+const mockGame = {
+  actors: {
+    get: jest.fn()
+  }
+};
+
+(global as Record<string, unknown>)['game'] = mockGame;
+
+describe('updateActorHandler', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockActor = createMockActor();
+    mockGame.actors.get.mockReturnValue(mockActor);
+    mockActor.update.mockImplementation(async (data: Record<string, unknown>) => {
+      Object.assign(mockActor, data);
+      return undefined;
+    });
+  });
+
+  describe('successful updates', () => {
+    it('should update actor name', async () => {
+      const result = await updateActorHandler({
+        actorId: 'actor-123',
+        name: 'Updated Character'
+      });
+
+      expect(mockGame.actors.get).toHaveBeenCalledWith('actor-123');
+      expect(mockActor.update).toHaveBeenCalledWith({
+        name: 'Updated Character'
+      });
+      expect(result).toEqual({
+        id: 'actor-123',
+        uuid: 'Actor.actor-123',
+        name: 'Updated Character',
+        type: 'character',
+        img: 'icons/svg/mystery-man.svg',
+        folder: null,
+        folderId: null
+      });
+    });
+
+    it('should update actor img', async () => {
+      await updateActorHandler({
+        actorId: 'actor-123',
+        img: 'new/image.png'
+      });
+
+      expect(mockActor.update).toHaveBeenCalledWith({
+        img: 'new/image.png'
+      });
+    });
+
+    it('should update actor folder', async () => {
+      await updateActorHandler({
+        actorId: 'actor-123',
+        folder: 'folder-456'
+      });
+
+      expect(mockActor.update).toHaveBeenCalledWith({
+        folder: 'folder-456'
+      });
+    });
+
+    it('should update actor system data', async () => {
+      const systemData = {
+        abilities: { str: { value: 20 } }
+      };
+
+      await updateActorHandler({
+        actorId: 'actor-123',
+        system: systemData
+      });
+
+      expect(mockActor.update).toHaveBeenCalledWith({
+        system: systemData
+      });
+    });
+
+    it('should update multiple fields at once', async () => {
+      await updateActorHandler({
+        actorId: 'actor-123',
+        name: 'New Name',
+        img: 'new/image.png',
+        folder: 'folder-789',
+        system: { level: 5 }
+      });
+
+      expect(mockActor.update).toHaveBeenCalledWith({
+        name: 'New Name',
+        img: 'new/image.png',
+        folder: 'folder-789',
+        system: { level: 5 }
+      });
+    });
+
+    it('should not include undefined fields in update', async () => {
+      await updateActorHandler({
+        actorId: 'actor-123',
+        name: 'Only Name'
+      });
+
+      const updateCall = mockActor.update.mock.calls[0][0];
+      expect(updateCall).toEqual({ name: 'Only Name' });
+      expect(updateCall).not.toHaveProperty('img');
+      expect(updateCall).not.toHaveProperty('folder');
+      expect(updateCall).not.toHaveProperty('system');
+    });
+
+    it('should return folder name when actor has folder', async () => {
+      mockActor.update.mockImplementation(async () => {
+        mockActor.folder = { name: 'Party Members' };
+        return undefined;
+      });
+
+      const result = await updateActorHandler({
+        actorId: 'actor-123',
+        name: 'Updated Character'
+      });
+
+      expect(result.folder).toBe('Party Members');
+    });
+
+    it('should resolve with current values when no-op update() resolves undefined without mutating', async () => {
+      mockActor.update.mockResolvedValue(undefined);
+
+      const result = await updateActorHandler({
+        actorId: 'actor-123',
+        name: 'Original Character'
+      });
+
+      expect(mockActor.update).toHaveBeenCalledWith({
+        name: 'Original Character'
+      });
+      expect(result).toEqual({
+        id: 'actor-123',
+        uuid: 'Actor.actor-123',
+        name: 'Original Character',
+        type: 'character',
+        img: 'icons/svg/mystery-man.svg',
+        folder: null,
+        folderId: null
+      });
+    });
+  });
+
+  describe('error handling', () => {
+    it('should throw error if actor not found', async () => {
+      mockGame.actors.get.mockReturnValue(undefined);
+
+      await expect(
+        updateActorHandler({
+          actorId: 'non-existent',
+          name: 'New Name'
+        })
+      ).rejects.toThrow('Actor not found: non-existent');
+    });
+  });
+});
+describe('updateActorHandler by tokenId', () => {
+  it('updates the token\'s actor and echoes the token id', async () => {
+    const tokenActor = createMockActor();
+    tokenActor.update.mockImplementation(async (data: Record<string, unknown>) => {
+      Object.assign(tokenActor, data);
+      return undefined;
+    });
+    const scene = { id: 's1', tokens: { get: jest.fn().mockReturnValue({ id: 'token-7', actor: tokenActor }) } };
+    (global as Record<string, unknown>)['game'] = { actors: { get: jest.fn() }, scenes: { get: jest.fn(), active: scene } };
+
+    const result = await updateActorHandler({ tokenId: 'token-7', system: { attributes: { hp: { value: 3 } } } });
+
+    expect(tokenActor.update).toHaveBeenCalledWith({ system: { attributes: { hp: { value: 3 } } } });
+    expect(result.tokenId).toBe('token-7');
+    expect(result.id).toBe('actor-123');
+
+    (global as Record<string, unknown>)['game'] = mockGame;
+  });
+});

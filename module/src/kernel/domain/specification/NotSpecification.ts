@@ -1,0 +1,1 @@
+export { NotSpecification } from './CompositeSpecification';

@@ -1,0 +1,1 @@
+export { AndSpecification } from './CompositeSpecification';

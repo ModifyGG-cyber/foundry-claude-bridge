@@ -1,6 +1,6 @@
 {
   "name": "foundry-claude-relay",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Self-hosted relay and remote MCP server that connects Claude to a Foundry VTT world",
   "license": "MIT",
   "type": "module",
@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "npm run build && node test/e2e.mjs"
+    "test": "npm run build && node test/e2e.mjs",
+    "gen": "node scripts/gen-schemas.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -23,7 +24,13 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.5.0",
-    "linkedom": "^0.18.14",
+    "ts-json-schema-generator": "^2.9.0",
     "typescript": "^5.6.0"
-  }
+  },
+  "bin": {
+    "foundry-bridge": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ]
 }

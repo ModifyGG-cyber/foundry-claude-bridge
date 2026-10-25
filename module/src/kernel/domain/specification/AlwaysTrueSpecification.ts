@@ -1,0 +1,1 @@
+export { AlwaysTrueSpecification } from './CompositeSpecification';
