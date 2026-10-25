@@ -1,6 +1,6 @@
 {
   "name": "foundry-claude-relay",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Self-hosted relay and remote MCP server that connects Claude to a Foundry VTT world",
   "license": "MIT",
   "type": "module",

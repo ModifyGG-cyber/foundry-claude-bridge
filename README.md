@@ -12,7 +12,7 @@ Claude Desktop ──stdio──▶ relay (on your PC) ◀──ws://localhost:8
   [Foundry API Bridge](https://github.com/alexivenkov/foundry-api-bridge-module) 8.15.0 (see `NOTICE.md`)
   that adds Call of Cthulhu 7e tools. Foundry v11–v14. Runs only in a GM's browser.
 
-Claude gets 164 tools: actors, items, inventory, effects, folders, journals, roll tables, macros,
+Claude gets 166 tools: actors, items, inventory, effects, folders, journals, roll tables, macros,
 playlists, scenes, walls and doors, map notes, tokens (with pathfinding), combat, compendiums, chat,
 dice, world time, and UI. System tools appear only in worlds of that system:
 
@@ -21,6 +21,11 @@ dice, world time, and UI. System tools appear only in worlds of that system:
   requests for players), `coc7-get-investigator`, `coc7-lose-sanity`, `coc7-spend-luck`, `coc7-deal-damage`.
 - **D&D 5e**: checks, saves, attacks, damage, Midi-QOL-aware item use, damage and healing, compendium filters.
 - **Pathfinder 2e**: checks, strikes, spells, conditions, compendium filters.
+
+Handout templates: `handout-template-list` and `handout-template-get` serve 12 styled layouts (telegram,
+newspaper clipping, letter, diary page, police report, asylum record, occult tome page, calling card, travel
+ticket, wanted poster, royal decree, notice board). Claude fills one with its own text and saves it as a
+journal page. They are built into the relay and work even before Foundry connects.
 
 A GM must have the world open in a browser tab for Claude to reach it.
 
