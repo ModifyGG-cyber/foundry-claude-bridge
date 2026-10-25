@@ -211,6 +211,14 @@ export const CATALOG: CatalogEntry[] = [
   e('pf2e/remove-condition', 'w', 'PF2e remove a condition.'),
   e('pf2e/filter-compendium-actors', 'r', 'PF2e search compendium creatures by level, traits, rarity and size.'),
   e('pf2e/filter-compendium-items', 'r', 'PF2e search compendium items by level, traits, rarity, price and tradition.'),
+
+  // Call of Cthulhu 7th Edition (added in the fork)
+  e('coc7/get-investigator', 'r', 'CoC7 compact sheet: characteristics, HP/MP/SAN/Luck, every skill with its value, weapons and statuses. Use it before rolling.'),
+  e('coc7/roll-check', 'w', 'CoC7 roll a skill (by sheet name, e.g. "Spot Hidden"), characteristic (str, con, siz, dex, app, int, pow, edu) or attribute (lck, san) as the actor, with difficulty regular/hard/extreme/critical and bonusDice -2..2 (negative = penalty dice). Posts the normal system card (push, spend Luck) and returns the total, success level and whether it passed.'),
+  e('coc7/request-roll', 'w', 'CoC7 post clickable roll requests so players roll themselves: skill, characteristic or attribute checks, and sanity checks with sanMin/sanMax (e.g. 0 / 1D6) and a reason. Several requests can go in one message.'),
+  e('coc7/lose-sanity', 'w', 'CoC7 take SAN from an actor directly (a number or formula such as "1D6"), recording the reason so repeated exposure is tracked.'),
+  e('coc7/spend-luck', 'w', 'CoC7 spend Luck points; refuses if the actor has too little.'),
+  e('coc7/deal-damage', 'w', 'CoC7 deal damage (number or formula) to an actor, applying armour unless ignoreArmor; the system sets dying/dead/major wound conditions.'),
 ];
 
 export const toolName = (command: string) => command.replace('/', '-');

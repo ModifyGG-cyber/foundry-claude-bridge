@@ -1047,6 +1047,236 @@
   },
   "additionalProperties": false
  },
+ "coc7/get-investigator": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   }
+  },
+  "additionalProperties": false
+ },
+ "coc7/roll-check": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "kind": {
+    "type": "string",
+    "enum": [
+     "skill",
+     "characteristic",
+     "attribute"
+    ]
+   },
+   "name": {
+    "type": "string",
+    "description": "Skill name as on the sheet (\"Spot Hidden\"), characteristic key (str, con, siz, dex, app, int, pow, edu) or attribute key (lck, san)."
+   },
+   "difficulty": {
+    "type": "string",
+    "enum": [
+     "regular",
+     "hard",
+     "extreme",
+     "critical"
+    ]
+   },
+   "bonusDice": {
+    "type": "number",
+    "description": "Bonus dice (1 or 2) as positive numbers, penalty dice (-1 or -2) as negative. Default 0."
+   },
+   "blind": {
+    "type": "boolean",
+    "description": "Hide the result from players."
+   }
+  },
+  "required": [
+   "kind",
+   "name"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/request-roll": {
+  "type": "object",
+  "properties": {
+   "requests": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "anyOf": [
+        {
+         "type": "string",
+         "enum": [
+          "skill",
+          "characteristic",
+          "attribute"
+         ]
+        },
+        {
+         "type": "string",
+         "const": "sanity"
+        }
+       ]
+      },
+      "name": {
+       "type": "string",
+       "description": "Skill name, characteristic or attribute key. Not used for sanity."
+      },
+      "difficulty": {
+       "type": "string",
+       "enum": [
+        "regular",
+        "hard",
+        "extreme",
+        "critical"
+       ]
+      },
+      "bonusDice": {
+       "type": "number"
+      },
+      "sanMin": {
+       "type": "string",
+       "description": "Sanity only: SAN lost on a success, e.g. \"0\" or \"1\"."
+      },
+      "sanMax": {
+       "type": "string",
+       "description": "Sanity only: SAN lost on a failure, e.g. \"1D6\"."
+      },
+      "sanReason": {
+       "type": "string",
+       "description": "Sanity only: what caused it, tracked for repeated exposure."
+      },
+      "blind": {
+       "type": "boolean"
+      },
+      "label": {
+       "type": "string",
+       "description": "Button text; defaults to the check name."
+      }
+     },
+     "required": [
+      "kind"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "message": {
+    "type": "string",
+    "description": "Text shown above the buttons."
+   },
+   "whisperTo": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    },
+    "description": "User ids to whisper the request to; omitted = everyone."
+   }
+  },
+  "required": [
+   "requests"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/lose-sanity": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": [
+     "number",
+     "string"
+    ],
+    "description": "A number or a dice formula (\"1D6\")."
+   },
+   "reason": {
+    "type": "string",
+    "description": "The cause, e.g. \"Ghoul\". Repeated causes are tracked by the system."
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/spend-luck": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": "number"
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
+ "coc7/deal-damage": {
+  "type": "object",
+  "properties": {
+   "actorId": {
+    "type": "string"
+   },
+   "tokenId": {
+    "type": "string",
+    "description": "A token on the scene instead of actorId: acts on that token's own actor."
+   },
+   "sceneId": {
+    "type": "string"
+   },
+   "amount": {
+    "type": [
+     "number",
+     "string"
+    ],
+    "description": "A number or a dice formula (\"1D8+1D4\")."
+   },
+   "ignoreArmor": {
+    "type": "boolean",
+    "description": "Skip the actor's armour. Default false."
+   }
+  },
+  "required": [
+   "amount"
+  ],
+  "additionalProperties": false
+ },
  "get-world-info": {
   "type": "object",
   "additionalProperties": {

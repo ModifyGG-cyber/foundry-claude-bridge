@@ -165,6 +165,12 @@ import {
   pf2eIncreaseConditionHandler,
   pf2eDecreaseConditionHandler,
   pf2eGetConditionsHandler,
+  coc7RollCheckHandler,
+  coc7GetInvestigatorHandler,
+  coc7RequestRollHandler,
+  coc7LoseSanityHandler,
+  coc7SpendLuckHandler,
+  coc7DealDamageHandler,
   pf2eListStrikesHandler,
   pf2eRollStrikeHandler,
   pf2eRollStrikeDamageHandler,
@@ -202,21 +208,12 @@ Hooks.on('renderSettingsConfig', (_app: unknown, html: unknown) => {
     return;
   }
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.innerHTML = '<i class="fas fa-key"></i> Get API Key';
-  button.style.cssText = 'margin-top: 4px; padding: 4px 12px; cursor: pointer; font-size: 12px;';
-  button.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.open('https://foundry-mcp.com/auth/patreon', '_blank');
-  });
-
+  // Fork: keys come from your own relay, not foundry-mcp.com.
   const hint = document.createElement('p');
   hint.className = 'hint';
-  hint.textContent = 'Free account available — no subscription required';
+  hint.textContent = 'Generate a key with: node relay/dist/index.js --new-key';
   hint.style.cssText = 'margin-top: 2px; font-size: 11px; font-style: italic;';
 
-  formGroup.appendChild(button);
   formGroup.appendChild(hint);
 });
 
@@ -341,6 +338,14 @@ function initializeWebSocket(
   commandRouter.register('dnd5e/filter-compendium-items', dnd5eFilterCompendiumItemsHandler);
   commandRouter.register('pf2e/filter-compendium-actors', pf2eFilterCompendiumActorsHandler);
   commandRouter.register('pf2e/filter-compendium-items', pf2eFilterCompendiumItemsHandler);
+
+  // CoC7 (added in this fork)
+  commandRouter.register('coc7/get-investigator', coc7GetInvestigatorHandler);
+  commandRouter.register('coc7/roll-check', coc7RollCheckHandler);
+  commandRouter.register('coc7/request-roll', coc7RequestRollHandler);
+  commandRouter.register('coc7/lose-sanity', coc7LoseSanityHandler);
+  commandRouter.register('coc7/spend-luck', coc7SpendLuckHandler);
+  commandRouter.register('coc7/deal-damage', coc7DealDamageHandler);
   commandRouter.register('pf2e/roll-skill', pf2eRollSkillHandler);
   commandRouter.register('pf2e/roll-save', pf2eRollSaveHandler);
   commandRouter.register('pf2e/roll-perception', pf2eRollPerceptionHandler);

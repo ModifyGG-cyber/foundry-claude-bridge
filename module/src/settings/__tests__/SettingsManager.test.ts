@@ -76,9 +76,9 @@ describe('SettingsManager', () => {
         'wsUrl',
         expect.objectContaining({
           name: 'MCP WebSocket URL',
-          hint: 'WebSocket URL for MCP server (Claude / AI assistants integration)',
+          hint: 'WebSocket URL of your relay (ws://localhost:8787/ws when Claude Desktop runs on this PC)',
           type: String,
-          default: 'wss://foundry-mcp.com/ws',
+          default: 'ws://localhost:8787/ws',
           requiresReload: true
         })
       );
@@ -87,11 +87,11 @@ describe('SettingsManager', () => {
         'apiUrl',
         expect.objectContaining({
           name: 'API WebSocket URL',
-          hint: 'WebSocket URL for public Foundry API (REST/WS integrations for bots, dashboards, etc.)',
+          hint: 'Optional second relay for REST/WS integrations. Leave empty unless you run one.',
           scope: 'world',
           config: true,
           type: String,
-          default: 'wss://api.foundry-mcp.com/v1/connect',
+          default: '',
           requiresReload: true
         })
       );

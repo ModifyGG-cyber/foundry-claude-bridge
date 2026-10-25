@@ -45,6 +45,12 @@ export type CommandType =
   | 'pf2e/post-item'
   | 'pf2e/filter-compendium-actors'
   | 'pf2e/filter-compendium-items'
+  | 'coc7/get-investigator'
+  | 'coc7/roll-check'
+  | 'coc7/request-roll'
+  | 'coc7/lose-sanity'
+  | 'coc7/spend-luck'
+  | 'coc7/deal-damage'
   | 'get-world-info'
   | 'get-actors'
   | 'filter-actors'
@@ -2614,6 +2620,12 @@ export interface CommandParamsMap {
   'pf2e/post-item': PostItemParams;
   'pf2e/filter-compendium-actors': Pf2eFilterCompendiumActorsParams;
   'pf2e/filter-compendium-items': Pf2eFilterCompendiumItemsParams;
+  'coc7/get-investigator': Coc7ActorParams;
+  'coc7/roll-check': Coc7RollCheckParams;
+  'coc7/request-roll': Coc7RequestRollParams;
+  'coc7/lose-sanity': Coc7LoseSanityParams;
+  'coc7/spend-luck': Coc7SpendLuckParams;
+  'coc7/deal-damage': Coc7DealDamageParams;
   'get-world-info': GetWorldInfoParams;
   'get-actors': Record<string, never>;
   'filter-actors': FilterActorsParams;
@@ -2785,6 +2797,12 @@ export interface CommandResultMap {
   'pf2e/post-item': PostItemResult;
   'pf2e/filter-compendium-actors': Pf2eCompendiumSearchResult;
   'pf2e/filter-compendium-items': Pf2eCompendiumSearchResult;
+  'coc7/get-investigator': Coc7InvestigatorResult;
+  'coc7/roll-check': Coc7CheckResult;
+  'coc7/request-roll': Coc7RequestRollResult;
+  'coc7/lose-sanity': Coc7ValueChangeResult;
+  'coc7/spend-luck': Coc7ValueChangeResult;
+  'coc7/deal-damage': Coc7ValueChangeResult;
   'get-world-info': WorldInfoResult;
   'get-actors': ActorSummary[];
   'filter-actors': FilterActorsResult;
@@ -2922,4 +2940,116 @@ export interface CommandResultMap {
   'notify': NotifyResult;
   'pan-canvas': PanCanvasResult;
   'ping-location': PingLocationResult;
+}
+// Call of Cthulhu 7th Edition (CoC7 system) commands — added in this fork
+
+export type Coc7Difficulty = 'regular' | 'hard' | 'extreme' | 'critical';
+export type Coc7CheckKind = 'skill' | 'characteristic' | 'attribute';
+export type Coc7SuccessLevel = 'fumble' | 'failure' | 'regular' | 'hard' | 'extreme' | 'critical';
+
+export interface Coc7ActorParams {
+  actorId?: string;
+  /** A token on the scene instead of actorId: acts on that token's own actor. */
+  tokenId?: string;
+  sceneId?: string;
+}
+
+export interface Coc7RollCheckParams extends Coc7ActorParams {
+  kind: Coc7CheckKind;
+  /** Skill name as on the sheet ("Spot Hidden"), characteristic key (str, con, siz, dex, app, int, pow, edu) or attribute key (lck, san). */
+  name: string;
+  /** Required success level. Default regular. */
+  difficulty?: Coc7Difficulty;
+  /** Bonus dice (1 or 2) as positive numbers, penalty dice (-1 or -2) as negative. Default 0. */
+  bonusDice?: number;
+  /** Hide the result from players. */
+  blind?: boolean;
+}
+
+export interface Coc7CheckResult {
+  messageId: string;
+  actorId: string;
+  actorName: string;
+  kind: Coc7CheckKind;
+  name: string;
+  threshold: number | null;
+  difficulty: Coc7Difficulty;
+  bonusDice: number;
+  total: number | null;
+  tensDice: number[];
+  unitDie: number | null;
+  successLevel: Coc7SuccessLevel | null;
+  /** True when the success level meets the requested difficulty. */
+  passed: boolean | null;
+}
+
+export interface Coc7RollRequest {
+  kind: Coc7CheckKind | 'sanity';
+  /** Skill name, characteristic or attribute key. Not used for sanity. */
+  name?: string;
+  difficulty?: Coc7Difficulty;
+  bonusDice?: number;
+  /** Sanity only: SAN lost on a success, e.g. "0" or "1". */
+  sanMin?: string;
+  /** Sanity only: SAN lost on a failure, e.g. "1D6". */
+  sanMax?: string;
+  /** Sanity only: what caused it, tracked for repeated exposure. */
+  sanReason?: string;
+  blind?: boolean;
+  /** Button text; defaults to the check name. */
+  label?: string;
+}
+
+export interface Coc7RequestRollParams {
+  requests: Coc7RollRequest[];
+  /** Text shown above the buttons. */
+  message?: string;
+  /** User ids to whisper the request to; omitted = everyone. */
+  whisperTo?: string[];
+}
+
+export interface Coc7RequestRollResult {
+  messageId: string;
+  links: string[];
+}
+
+export interface Coc7LoseSanityParams extends Coc7ActorParams {
+  /** A number or a dice formula ("1D6"). */
+  amount: number | string;
+  /** The cause, e.g. "Ghoul". Repeated causes are tracked by the system. */
+  reason?: string;
+}
+
+export interface Coc7SpendLuckParams extends Coc7ActorParams {
+  amount: number;
+}
+
+export interface Coc7DealDamageParams extends Coc7ActorParams {
+  /** A number or a dice formula ("1D8+1D4"). */
+  amount: number | string;
+  /** Skip the actor's armour. Default false. */
+  ignoreArmor?: boolean;
+}
+
+export interface Coc7ValueChangeResult {
+  actorId: string;
+  actorName: string;
+  before: number;
+  after: number;
+  /** Rolled amount when a formula was given. */
+  rolled?: number;
+  applied: boolean;
+  note?: string;
+}
+
+export interface Coc7InvestigatorResult {
+  id: string;
+  name: string;
+  type: string;
+  occupation: string | null;
+  characteristics: Record<string, number | null>;
+  attributes: Record<string, { value: number | null; max?: number | null }>;
+  skills: { id: string; name: string; value: number | null }[];
+  weapons: { id: string; name: string; damage: string | null; skill: string | null }[];
+  statuses: string[];
 }

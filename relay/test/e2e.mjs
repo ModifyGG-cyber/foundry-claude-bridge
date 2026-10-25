@@ -67,7 +67,7 @@ const json = res => JSON.parse(text(res));
   try {
     await check('stdio: every tool is listed before Foundry connects', async () => {
       const { tools } = await client.listTools();
-      assert.equal(tools.length, 158);
+      assert.equal(tools.length, 164);
       const skill = tools.find(t => t.name === 'dnd5e-roll-skill');
       assert.deepEqual(skill.inputSchema.required, ['actorId', 'skill']);
       assert.equal(tools.find(t => t.name === 'clear-chat').annotations.destructiveHint, true);
@@ -102,6 +102,7 @@ const json = res => JSON.parse(text(res));
       assert.ok(listChanged >= 1);
       const { tools } = await client.listTools();
       assert.ok(!tools.some(t => t.name.startsWith('dnd5e-') || t.name.startsWith('pf2e-')), 'no dnd5e/pf2e tools in a CoC7 world');
+      assert.ok(tools.some(t => t.name === 'coc7-roll-check'), 'CoC7 tools in a CoC7 world');
       assert.ok(tools.some(t => t.name === 'get-actor'));
     });
 
@@ -144,7 +145,7 @@ const json = res => JSON.parse(text(res));
       await sleep(300);
       const { tools } = await client.listTools();
       assert.ok(tools.some(t => t.name === 'dnd5e-roll-skill'), 'dnd5e tools appear for a dnd5e world');
-      assert.ok(!tools.some(t => t.name.startsWith('pf2e-')));
+      assert.ok(!tools.some(t => t.name.startsWith('pf2e-') || t.name.startsWith('coc7-')));
       second.close();
     });
   } finally {

@@ -32,21 +32,21 @@ export function registerSettings(): void {
 
   game.settings.register(MODULE_ID, 'wsUrl', {
     name: 'MCP WebSocket URL',
-    hint: 'WebSocket URL for MCP server (Claude / AI assistants integration)',
+    hint: 'WebSocket URL of your relay (ws://localhost:8787/ws when Claude Desktop runs on this PC)',
     scope: 'world',
     config: true,
     type: String,
-    default: 'wss://foundry-mcp.com/ws',
+    default: 'ws://localhost:8787/ws',
     requiresReload: true
   });
 
   game.settings.register(MODULE_ID, 'apiUrl', {
     name: 'API WebSocket URL',
-    hint: 'WebSocket URL for public Foundry API (REST/WS integrations for bots, dashboards, etc.)',
+    hint: 'Optional second relay for REST/WS integrations. Leave empty unless you run one.',
     scope: 'world',
     config: true,
     type: String,
-    default: 'wss://api.foundry-mcp.com/v1/connect',
+    default: '',
     requiresReload: true
   });
 
@@ -54,7 +54,7 @@ export function registerSettings(): void {
   // of the world from the browser console. The key lives in the GM's browser.
   game.settings.register(MODULE_ID, 'apiKey', {
     name: 'API Key',
-    hint: 'API key for server authorization (format: pk_...). Stored in this browser only.',
+    hint: 'The FOUNDRY_KEY your relay uses (format: pk_...). Stored in this browser only.',
     scope: 'client',
     config: true,
     type: String,

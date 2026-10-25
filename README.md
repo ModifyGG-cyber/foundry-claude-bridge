@@ -9,12 +9,18 @@ Claude Desktop ──stdio──▶ relay (on your PC) ◀──ws://localhost:8
 - `relay/`: a small Node service. Claude Desktop starts it as a local MCP server, and the Foundry
   module connects to it over a WebSocket. It can also run as a remote server for claude.ai (`--http`).
 - `module/`: the Foundry module, a fork of the MIT-licensed
-  [Foundry API Bridge](https://github.com/alexivenkov/foundry-api-bridge-module) 8.15.0 (see `NOTICE.md`).
-  Foundry v11–v14. Runs only in a GM's browser.
+  [Foundry API Bridge](https://github.com/alexivenkov/foundry-api-bridge-module) 8.15.0 (see `NOTICE.md`)
+  that adds Call of Cthulhu 7e tools. Foundry v11–v14. Runs only in a GM's browser.
 
-Claude gets 158 tools: actors, items, inventory, effects, folders, journals, roll tables, macros,
+Claude gets 164 tools: actors, items, inventory, effects, folders, journals, roll tables, macros,
 playlists, scenes, walls and doors, map notes, tokens (with pathfinding), combat, compendiums, chat,
-dice, world time, and UI, plus D&D 5e and Pathfinder 2e tools in worlds of those systems.
+dice, world time, and UI. System tools appear only in worlds of that system:
+
+- **Call of Cthulhu 7e** (fork only): `coc7-roll-check` (skills, characteristics, Luck, SAN with
+  difficulty and bonus/penalty dice, graded result), `coc7-request-roll` (clickable roll and sanity
+  requests for players), `coc7-get-investigator`, `coc7-lose-sanity`, `coc7-spend-luck`, `coc7-deal-damage`.
+- **D&D 5e**: checks, saves, attacks, damage, Midi-QOL-aware item use, damage and healing, compendium filters.
+- **Pathfinder 2e**: checks, strikes, spells, conditions, compendium filters.
 
 A GM must have the world open in a browser tab for Claude to reach it.
 
@@ -37,9 +43,11 @@ You need Node.js 20 or newer.
    - **API WebSocket URL:** empty (that channel is the original author's REST service)
    - **API Key:** the `pk_…` key from step 1
 
-   Reload the world. If you already run the original module, these settings are all you need to switch it
-   over. To install this fork instead, build it with `cd module && npm ci && npm run build` and copy
-   `module/dist` to `Data/modules/foundry-api-bridge`.
+   Reload the world. If you already run the original module, these three settings are enough to switch it
+   over, but the CoC7 tools need this fork. To install the fork: `cd module && npm ci && npm run build`, then
+   replace the contents of `Data/modules/foundry-api-bridge` with `module/dist`. It keeps the same module id
+   and settings, and its manifest points at this repository, so Foundry won't overwrite it with the
+   original.
 
 3. **Add the relay to Claude Desktop.** Open Settings → Developer → Edit Config, and add the following
    to `claude_desktop_config.json` (use the full path to your clone):

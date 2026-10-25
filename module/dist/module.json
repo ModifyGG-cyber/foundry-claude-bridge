@@ -1,0 +1,29 @@
+{
+  "id": "foundry-api-bridge",
+  "title": "Foundry API Bridge (self-hosted fork)",
+  "description": "Connect Foundry VTT to Claude through your own relay (no third-party service). Fork of Foundry API Bridge by Alex Ivenkov, MIT; adds Call of Cthulhu 7e tools.",
+  "version": "8.15.0-fork.1",
+  "authors": [
+    {
+      "name": "Alex Ivenkov",
+      "url": "https://github.com/alexivenkov"
+    },
+    {
+      "name": "Jim (fork)",
+      "url": "https://github.com/ModifyGG-cyber"
+    }
+  ],
+  "compatibility": {
+    "minimum": "11",
+    "verified": "14"
+  },
+  "esmodules": [
+    "module.js"
+  ],
+  "styles": [
+    "styles/config-form.css"
+  ],
+  "url": "https://github.com/ModifyGG-cyber/foundry-claude-bridge",
+  "manifest": "https://raw.githubusercontent.com/ModifyGG-cyber/foundry-claude-bridge/main/module/dist/module.json",
+  "download": "https://github.com/ModifyGG-cyber/foundry-claude-bridge/releases/download/v8.15.0-fork.1/foundry-api-bridge.zip"
+}

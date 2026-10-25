@@ -11,7 +11,7 @@ export const VERSION = '0.2.0';
 const INSTRUCTIONS = `Tools for reading and changing a live Foundry VTT world through the GM's browser.
 Start with get-world-info to learn the game system. Prefer ids from list/search results over guessing.
 Changes are visible to players immediately. Tools marked destructive cannot be undone.
-dnd5e-* and pf2e-* tools appear only when the world runs that system; in other systems (e.g. CoC7) read and change system data with get-actor / update-actor.`;
+dnd5e-*, pf2e-* and coc7-* tools appear only when the world runs that system. In CoC7 worlds prefer coc7-roll-check over roll-dice, and coc7-request-roll when a player should roll.`;
 
 function toTool(entry: CatalogEntry): Tool {
   const schema = SCHEMAS[entry.command];
@@ -34,7 +34,7 @@ const BY_NAME = new Map(CATALOG.map(entry => [toolName(entry.command), entry]));
 export function availableTools(system?: string) {
   return CATALOG.filter(entry => {
     const needs = systemOf(entry.command);
-    return !needs || !system || needs === system;
+    return !needs || !system || needs === system.toLowerCase();
   }).map(toTool);
 }
 
