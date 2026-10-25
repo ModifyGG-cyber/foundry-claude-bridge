@@ -1,5 +1,6 @@
 import type {
   Coc7ActorParams,
+  Coc7CardSummary,
   Coc7CheckKind,
   Coc7CheckResult,
   Coc7DealDamageParams,
@@ -102,6 +103,23 @@ function readCheckCard(message: Coc7ChatMessage): Pick<Coc7CheckResult, 'thresho
     unitDie: roll ? roll.unitDie % 10 : null,
     bonusDice: poolModifier,
     difficultyLevel: num(pool?.difficulty)
+  };
+}
+
+/** The outcome of a CoC7 check card, for chat listings where the raw roll totals mean nothing. */
+export function coc7CheckSummary(message: Coc7ChatMessage): Coc7CardSummary | undefined {
+  if (message.flags?.CoC7?.load?.['as'] !== 'CoC7Check') return undefined;
+  const card = readCheckCard(message);
+  if (card.total === null || card.threshold === null) return undefined;
+  const level = successLevel(card.total, card.threshold);
+  const difficulty = DIFFICULTY_FROM_LEVEL[card.difficultyLevel ?? 1] ?? 'regular';
+  return {
+    total: card.total,
+    threshold: card.threshold,
+    difficulty,
+    successLevel: level,
+    passed: meetsDifficulty(level, difficulty),
+    bonusDice: card.bonusDice
   };
 }
 

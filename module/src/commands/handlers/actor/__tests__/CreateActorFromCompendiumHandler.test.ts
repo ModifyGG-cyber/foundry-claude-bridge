@@ -69,7 +69,8 @@ describe('createActorFromCompendiumHandler', () => {
         name: 'Goblin',
         type: 'npc',
         img: 'icons/creatures/goblin.png',
-        system: { cr: 0.25 }
+        system: { cr: 0.25 },
+        _stats: { compendiumSource: 'Compendium.dnd5e.monsters.Actor.comp-actor-123', duplicateSource: null }
       });
       expect(result).toEqual({
         id: 'new-actor-456',

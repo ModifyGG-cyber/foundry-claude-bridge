@@ -12,6 +12,7 @@ interface MockMessage {
   rolls: Array<{ formula: string; total: number }>;
   isRoll: boolean;
   author: { id: string; name: string } | null;
+  flags?: Record<string, unknown>;
 }
 
 function createMockMessage(overrides: Partial<MockMessage> = {}): MockMessage {
@@ -263,5 +264,23 @@ describe('getChatMessagesHandler', () => {
     const result = await getChatMessagesHandler({ type: 'ic', authorId: 'user-1' });
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]!.id).toBe('msg-1');
+  });
+
+  it('collapses card whitespace and summarises CoC7 check cards', async () => {
+    mockMessages = [createMockMessage({
+      content: '<div class="coc7 card">\n\n   <h3>Spot Hidden</h3>\n\n\n   <p>Hard   success</p>\n  </div>',
+      rolls: [{ formula: '1d100', total: 0 }],
+      flags: { CoC7: { load: { as: 'CoC7Check', dicePool: {
+        threshold: 60, flatThresholdModifier: 0, currentPoolModifier: 0, difficulty: 2,
+        rolledDice: [{ baseDie: 2, unitDie: 5, bonusDice: [], penaltyDice: [], rolled: true }]
+      } } } }
+    })];
+
+    const result = await getChatMessagesHandler({});
+
+    expect(result.messages[0]!.content).toBe('Spot Hidden\nHard success');
+    expect(result.messages[0]!.coc7Check).toEqual({
+      total: 25, threshold: 60, difficulty: 'hard', successLevel: 'hard', passed: true, bonusDice: 0
+    });
   });
 });

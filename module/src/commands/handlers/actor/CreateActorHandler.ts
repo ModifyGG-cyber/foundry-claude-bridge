@@ -6,7 +6,7 @@ interface FoundryActor {
   name: string;
   type: string;
   img: string;
-  folder: { name: string } | null;
+  folder: { id?: string; name: string } | null;
 }
 
 interface ActorDocumentClass {
@@ -53,6 +53,7 @@ export async function createActorHandler(params: CreateActorParams): Promise<Act
     name: actor.name,
     type: actor.type,
     img: actor.img,
-    folder: actor.folder?.name ?? null
+    folder: actor.folder?.name ?? null,
+    folderId: actor.folder?.id ?? null
   };
 }

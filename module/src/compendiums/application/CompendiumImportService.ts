@@ -30,6 +30,27 @@ export interface CompendiumImportServiceDependencies {
   readonly actorInventory: ActorInventory;
 }
 
+/**
+ * Turn a pack document's source into world data the way Foundry's fromCompendium does: a new id,
+ * no pack folder, sort or ownership, and _stats.compendiumSource pointing back at the pack entry.
+ */
+function prepareImport(
+  data: Record<string, unknown>,
+  pack: PackDescriptor,
+  documentId: string,
+  options: { name?: string | undefined; folder?: string | undefined }
+): Record<string, unknown> {
+  delete data['_id'];
+  delete data['folder'];
+  delete data['sort'];
+  delete data['ownership'];
+  if (options.name !== undefined) data['name'] = options.name;
+  if (options.folder !== undefined) data['folder'] = options.folder;
+  const stats = (data['_stats'] as Record<string, unknown> | undefined) ?? {};
+  data['_stats'] = { ...stats, compendiumSource: `Compendium.${pack.id}.${pack.type}.${documentId}`, duplicateSource: null };
+  return data;
+}
+
 export class CompendiumImportService {
   constructor(private readonly deps: CompendiumImportServiceDependencies) {}
 
@@ -40,17 +61,12 @@ export class CompendiumImportService {
       throw new AdventureImportUnsupportedError(command.packId);
     }
 
-    const data = await this.deps.documentReader.readDocumentSource(
-      command.packId,
-      command.documentId
+    const data = prepareImport(
+      await this.deps.documentReader.readDocumentSource(command.packId, command.documentId),
+      pack,
+      command.documentId,
+      command
     );
-    delete data['_id'];
-    if (command.name !== undefined) {
-      data['name'] = command.name;
-    }
-    if (command.folder !== undefined) {
-      data['folder'] = command.folder;
-    }
 
     const created = await this.deps.worldImporter.createByDocumentType(pack.type, data);
     if (!created) {
@@ -71,17 +87,12 @@ export class CompendiumImportService {
       throw new PackTypeMismatchError(command.packId, 'Actor', pack.type);
     }
 
-    const data = await this.deps.documentReader.readDocumentSource(
-      command.packId,
-      command.actorId
+    const data = prepareImport(
+      await this.deps.documentReader.readDocumentSource(command.packId, command.actorId),
+      pack,
+      command.actorId,
+      command
     );
-    if (command.name !== undefined) {
-      data['name'] = command.name;
-    }
-    if (command.folder !== undefined) {
-      data['folder'] = command.folder;
-    }
-    delete data['_id'];
 
     const created = await this.deps.worldImporter.createActor(data);
     if (!created) {
@@ -96,17 +107,12 @@ export class CompendiumImportService {
       throw new PackTypeMismatchError(command.packId, 'Item', pack.type);
     }
 
-    const data = await this.deps.documentReader.readDocumentSource(
-      command.packId,
-      command.itemId
+    const data = prepareImport(
+      await this.deps.documentReader.readDocumentSource(command.packId, command.itemId),
+      pack,
+      command.itemId,
+      command
     );
-    delete data['_id'];
-    if (command.name !== undefined) {
-      data['name'] = command.name;
-    }
-    if (command.folder !== undefined) {
-      data['folder'] = command.folder;
-    }
 
     const created = await this.deps.worldImporter.createItem(data);
     if (!created) {
@@ -126,14 +132,12 @@ export class CompendiumImportService {
       throw new PackTypeMismatchError(command.packId, 'Item', pack.type);
     }
 
-    const data = await this.deps.documentReader.readDocumentSource(
-      command.packId,
-      command.itemId
+    const data = prepareImport(
+      await this.deps.documentReader.readDocumentSource(command.packId, command.itemId),
+      pack,
+      command.itemId,
+      { name: command.name }
     );
-    delete data['_id'];
-    if (command.name !== undefined) {
-      data['name'] = command.name;
-    }
     if (command.quantity !== undefined) {
       const existingSystem = data['system'];
       const system = (existingSystem as Record<string, unknown> | undefined) ?? {};

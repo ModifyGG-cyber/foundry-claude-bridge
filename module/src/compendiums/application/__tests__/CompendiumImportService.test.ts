@@ -54,7 +54,8 @@ describe('CompendiumImportService', () => {
       expect(worldImporter.importedData).toEqual({
         name: 'Renamed',
         folder: 'f1',
-        system: { quantity: 1 }
+        system: { quantity: 1 },
+        _stats: { compendiumSource: 'Compendium.p1.RollTable.src1', duplicateSource: null }
       });
       expect(result).toEqual({
         worldId: 'w1',
@@ -119,7 +120,8 @@ describe('CompendiumImportService', () => {
       expect(worldImporter.actorData).toEqual({
         name: 'Renamed',
         folder: 'f2',
-        system: { quantity: 1 }
+        system: { quantity: 1 },
+        _stats: { compendiumSource: 'Compendium.p1.Actor.a1', duplicateSource: null }
       });
       expect(view.id).toBe('a1');
     });
@@ -139,7 +141,11 @@ describe('CompendiumImportService', () => {
       const { service, worldImporter } = setup([descriptor({ id: 'p1', type: 'Item' })]);
 
       const view = await service.importItem({ packId: 'p1', itemId: 'i1' });
-      expect(worldImporter.itemData).toEqual({ name: 'Source', system: { quantity: 1 } });
+      expect(worldImporter.itemData).toEqual({
+        name: 'Source',
+        system: { quantity: 1 },
+        _stats: expect.objectContaining({ compendiumSource: expect.stringMatching(/^Compendium\..+\.Item\.i1$/) })
+      });
       expect(view.type).toBe('weapon');
 
       const actorPack = setup([descriptor({ id: 'ap', type: 'Actor' })]);
@@ -184,7 +190,8 @@ describe('CompendiumImportService', () => {
 
       expect(actorInventory.lastItemData).toEqual({
         name: 'Renamed',
-        system: { quantity: 5 }
+        system: { quantity: 5 },
+        _stats: expect.objectContaining({ compendiumSource: expect.stringMatching(/\.Item\./) })
       });
       expect(result.actor).toEqual({ id: 'actor1', name: 'Hero' });
       expect(result.item.id).toBe('emb1');
@@ -203,7 +210,20 @@ describe('CompendiumImportService', () => {
 
       expect(actorInventory.lastItemData).toEqual({
         name: 'Bare',
-        system: { quantity: 2 }
+        system: { quantity: 2 },
+        _stats: expect.objectContaining({ compendiumSource: expect.stringMatching(/\.Item\./) })
+      });
+    });
+
+    it("drops the pack's folder, sort and ownership", async () => {
+      const { service, documentReader, actorInventory } = setup();
+      documentReader.source = { _id: 'x', name: 'Knife', folder: 'packFolder', sort: 5, ownership: { default: 0 }, _stats: { coreVersion: '14' } };
+
+      await service.addItemToActor({ actorId: 'actor1', packId: 'p1', itemId: 'i9' });
+
+      expect(actorInventory.lastItemData).toEqual({
+        name: 'Knife',
+        _stats: { coreVersion: '14', compendiumSource: 'Compendium.p1.Item.i9', duplicateSource: null }
       });
     });
 

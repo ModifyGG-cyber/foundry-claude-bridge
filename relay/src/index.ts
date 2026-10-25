@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import express from 'express';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { loadBaseConfig, loadHttpConfig, newKey, type BaseConfig } from './config.js';
@@ -25,14 +27,15 @@ try {
   process.exit(1);
 }
 
-const hub = new FoundryHub(config.foundryKey, config.callTimeoutMs, log);
+const stateFile = join(process.env.BRIDGE_STATE_DIR ?? join(homedir(), '.foundry-claude-bridge'), 'last-world.json');
+const hub = new FoundryHub(config.foundryKey, config.callTimeoutMs, log, stateFile);
 const app = express();
 app.disable('x-powered-by');
 app.get('/health', (_req, res) => {
   res.json({
     ok: true,
     version: VERSION,
-    tools: availableTools(hub.world?.system).length,
+    tools: availableTools(hub.system).length,
     foundry: hub.connected ? { connected: true, since: hub.connectedAt, world: hub.world } : { connected: false },
   });
 });

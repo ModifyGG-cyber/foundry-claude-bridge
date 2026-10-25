@@ -50,12 +50,13 @@ const text = res => res.content[0].text;
 const json = res => JSON.parse(text(res));
 
 // ── stdio mode (Claude Desktop) ───────────────────────────────────────────
+const STATE_DIR = mkdtempSync(join(tmpdir(), 'relay-state-'));
 {
   const PORT = 18788;
   const transport = new StdioClientTransport({
     command: 'node',
     args: ['dist/index.js'],
-    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: String(PORT), CALL_TIMEOUT_MS: '1500' },
+    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: String(PORT), CALL_TIMEOUT_MS: '1500', BRIDGE_STATE_DIR: STATE_DIR },
     stderr: 'pipe',
   });
   const client = new Client({ name: 'e2e', version: '0' });
@@ -153,6 +154,27 @@ const json = res => JSON.parse(text(res));
   }
 }
 
+// A restarted relay lists tools for the last world's system before Foundry reconnects.
+{
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args: ['dist/index.js'],
+    env: { ...process.env, FOUNDRY_KEY: KEY, PORT: '18789', BRIDGE_STATE_DIR: STATE_DIR },
+    stderr: 'pipe',
+  });
+  const client = new Client({ name: 'e2e', version: '0' });
+  await client.connect(transport);
+  try {
+    await check('stdio: after a restart, the last world\'s system decides the tool list', async () => {
+      const { tools } = await client.listTools();
+      assert.ok(tools.some(t => t.name === 'dnd5e-roll-skill'));
+      assert.ok(!tools.some(t => t.name.startsWith('pf2e-') || t.name.startsWith('coc7-')));
+    });
+  } finally {
+    await client.close();
+  }
+}
+
 // ── HTTP mode (claude.ai or a remote relay) ───────────────────────────────
 {
   const PORT = 18787;
@@ -165,6 +187,7 @@ const json = res => JSON.parse(text(res));
     RELAY_PASSWORD: 'correct horse battery',
     API_KEY: 'k'.repeat(40),
     DATA_DIR: mkdtempSync(join(tmpdir(), 'relay-')),
+    BRIDGE_STATE_DIR: mkdtempSync(join(tmpdir(), 'relay-state-')),
   };
   const relay = spawn('node', ['dist/index.js', '--http'], { env, stdio: ['ignore', 'ignore', 'pipe'] });
   await new Promise(resolve => relay.stderr.on('data', d => String(d).includes('listening') && resolve()));
