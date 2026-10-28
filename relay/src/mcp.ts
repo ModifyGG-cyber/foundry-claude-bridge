@@ -7,7 +7,7 @@ import schemas from './generated/schemas.json' with { type: 'json' };
 
 const SCHEMAS = schemas as Record<string, Tool['inputSchema']>;
 
-export const VERSION = '0.2.2';
+export const VERSION = '0.2.3';
 
 const INSTRUCTIONS = `Tools for reading and changing a live Foundry VTT world through the GM's browser.
 Start with get-world-info to learn the game system. Prefer ids from list/search results over guessing.

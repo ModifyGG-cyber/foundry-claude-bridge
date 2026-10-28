@@ -186,6 +186,37 @@ const STATE_DIR = mkdtempSync(join(tmpdir(), 'relay-state-'));
   }
 }
 
+// ── a second copy takes the port over from a leftover one ─────────────────
+{
+  const PORT = 18789;
+  const env = { ...process.env, FOUNDRY_KEY: KEY, PORT: String(PORT), BRIDGE_STATE_DIR: STATE_DIR };
+  const old = spawn('node', ['dist/index.js'], { env, stdio: ['pipe', 'ignore', 'pipe'] });
+  await new Promise(resolve => old.stderr.on('data', d => String(d).includes('listening') && resolve()));
+  const oldExit = new Promise(resolve => old.on('exit', resolve));
+  const transport = new StdioClientTransport({ command: 'node', args: ['dist/index.js'], env, stderr: 'pipe' });
+  const client = new Client({ name: 'e2e', version: '0' });
+  try {
+    await check('stdio: a new copy makes a leftover copy exit and gets the port', async () => {
+      await client.connect(transport);
+      const code = await Promise.race([oldExit, sleep(5000).then(() => 'still running')]);
+      assert.equal(code, 0);
+      const mod = fakeModule(PORT);
+      await mod.opened;
+      mod.close();
+    });
+    await check('stdio: the bridge exits when stdin closes', async () => {
+      const lone = spawn('node', ['dist/index.js'], { env: { ...env, PORT: String(PORT + 1) }, stdio: ['pipe', 'ignore', 'pipe'] });
+      await new Promise(resolve => lone.stderr.on('data', d => String(d).includes('listening') && resolve()));
+      const exited = new Promise(resolve => lone.on('exit', resolve));
+      lone.stdin.end();
+      assert.equal(await Promise.race([exited, sleep(3000).then(() => 'still running')]), 0);
+    });
+  } finally {
+    old.kill();
+    await client.close();
+  }
+}
+
 // ── HTTP mode (claude.ai or a remote relay) ───────────────────────────────
 {
   const PORT = 18787;
